@@ -46,26 +46,14 @@ func Setup(app *fiber.App, db *mongo.Database) {
 	// === Invoice routes ===
 	invoiceController := controllers.NewInvoiceController(repositories.NewInvoiceRepository(db))
 	invoices := api.Group("/invoices")
-
-	// POST /api/invoices -> tạo hóa đơn
-	invoices.Post("/", invoiceController.Create)
-
-	// DELETE /api/invoices?id=abc,def -> xóa hóa đơn
-	invoices.Delete("/", invoiceController.Delete)
-
-	// GET /api/invoices/filter?from=dd/mm/yyyy&to=dd/mm/yyyy&page=1&limit=10 -> lọc hóa đơn theo ngày
-	invoices.Get("/filter", invoiceController.FilterByDate)
-
-	// PUT /api/invoices -> cập nhật hóa đơn (ID trong body)
-	invoices.Put("/", invoiceController.Update)
+	invoices.Post("/", invoiceController.Create)// POST /api/invoices -> tạo hóa đơn
+	invoices.Delete("/", invoiceController.Delete)// DELETE /api/invoices?id=abc,def -> xóa hóa đơn
+	invoices.Get("/", invoiceController.FilterByDate)	// GET /api/invoices?from=dd/mm/yyyy&to=dd/mm/yyyy&page=1&limit=10 -> lọc hóa đơn theo ngày
+	invoices.Put("/", invoiceController.Update)	// PUT /api/invoices -> cập nhật hóa đơn (ID trong body)
 
 	// === Store setting routes ===
 	settingCtrl := controllers.NewStoreSettingController(repositories.NewStoreSettingRepository(db))
 	settings := api.Group("/settings")
+	settings.Get("/", settingCtrl.Get) // GET /api/settings -> lấy thông tin cửa hàng
+	settings.Put("/", settingCtrl.Upsert)}// PUT /api/settings -> cập nhật thông tin cửa hàng (tên, SĐT, logo)
 
-	// GET /api/settings -> lấy thông tin cửa hàng
-	settings.Get("/", settingCtrl.Get)
-
-	// PUT /api/settings -> cập nhật thông tin cửa hàng (tên, SĐT, logo)
-	settings.Put("/", settingCtrl.Upsert)}
-}
