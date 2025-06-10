@@ -20,18 +20,12 @@ func NewInvoiceController(repo *repositories.InvoiceRepository) *InvoiceControll
 //
 // @route  POST /api/invoices
 // @body   {
+//   "storeName": "Shop ABC",
+//   "phone": "0912345678",
 //   "items": [
-//     { "productId": "66a1...", "name": "Áo sơ mi", "quantity": 2, "price": 150000 },
-//     { "productId": "66a2...", "name": "Quần jeans", "quantity": 1, "price": 300000 }
+//     { "productId": "xxx", "name": "Áo sơ mi", "quantity": 2, "price": 150000 }
 //   ],
-//   "note": "Khách mua vào sáng thứ 2"
-// }
-//
-// ✅ Dữ liệu trả về:
-// {
-//   "status": "success",
-//   "message": "Invoice created",
-//   "data": null
+//   "note": "Khách mua online"
 // }
 func (ctrl *InvoiceController) Create(c *fiber.Ctx) error {
 	var invoice models.Invoice
@@ -44,16 +38,9 @@ func (ctrl *InvoiceController) Create(c *fiber.Ctx) error {
 	return c.JSON(models.APIResponse{"success", "Invoice created", nil})
 }
 
-// Delete xóa một hoặc nhiều hóa đơn theo ID
+// Delete xoá một hoặc nhiều hóa đơn theo ID
 //
 // @route  DELETE /api/invoices?id=66a1...,66a2...
-//
-// ✅ Dữ liệu trả về:
-// {
-//   "status": "success",
-//   "message": "Invoices deleted",
-//   "data": null
-// }
 func (ctrl *InvoiceController) Delete(c *fiber.Ctx) error {
 	ids := strings.Split(c.Query("id"), ",")
 	if err := ctrl.repo.DeleteMany(c.Context(), ids); err != nil {
@@ -65,32 +52,6 @@ func (ctrl *InvoiceController) Delete(c *fiber.Ctx) error {
 // FilterByDate lọc hóa đơn theo khoảng ngày + phân trang + thống kê
 //
 // @route  GET /api/invoices/filter?from=01/05/2025&to=31/05/2025&page=1&limit=10
-//
-// ✅ Dữ liệu trả về:
-// {
-//   "status": "success",
-//   "message": "Filtered invoices",
-//   "data": {
-//     "invoices": [
-//       {
-//         "id": "66ab...",
-//         "createdAt": "2025-05-10T10:20:00+07:00",
-//         "items": [
-//           { "productId": "66a1...", "name": "Áo sơ mi", "quantity": 2, "price": 150000 }
-//         ],
-//         "note": "Khách A"
-//       }
-//     ],
-//     "page": 1,
-//     "limit": 10,
-//     "total": 13,
-//     "totalAmount": 300000,
-//     "productStats": {
-//       "Áo sơ mi": { "name": "Áo sơ mi", "quantity": 5, "revenue": 750000 },
-//       "Quần jeans": { "name": "Quần jeans", "quantity": 3, "revenue": 900000 }
-//     }
-//   }
-// }
 func (ctrl *InvoiceController) FilterByDate(c *fiber.Ctx) error {
 	fromStr := c.Query("from")
 	toStr := c.Query("to")
@@ -109,7 +70,7 @@ func (ctrl *InvoiceController) FilterByDate(c *fiber.Ctx) error {
 		return c.Status(500).JSON(models.APIResponse{"error", "List failed", nil})
 	}
 
-	// Thống kê theo sản phẩm
+	// Thống kê sản phẩm
 	type ProductStats struct {
 		Name     string  `json:"name"`
 		Quantity int     `json:"quantity"`
@@ -138,4 +99,49 @@ func (ctrl *InvoiceController) FilterByDate(c *fiber.Ctx) error {
 		"totalAmount":  totalAmount,
 		"productStats": products,
 	}})
+}
+
+// Update cập nhật thông tin hóa đơn (sản phẩm, số lượng, cửa hàng, ghi chú)
+//
+// @route PUT /api/invoices
+// @body  {
+//   "id": "66ab...",
+//   "storeName": "Shop XYZ",
+//   "phone": "0909123456",
+//   "items": [
+//     { "productId": "xxx", "name": "Áo thun", "quantity": 1, "price": 120000 }
+//   ],
+//   "note": "Cập nhật đơn hàng"
+// }
+func (ctrl *InvoiceController) Update(c *fiber.Ctx) error {
+	var invoice models.Invoice
+	if err := c.BodyParser(&invoice); err != nil {
+		return c.Status(400).JSON(models.APIResponse{
+			Status:  "error",
+			Message: "Invalid input",
+			Data:    nil,
+		})
+	}
+	if invoice.ID.IsZero() {
+		return c.Status(400).JSON(models.APIResponse{
+			Status:  "error",
+			Message: "Missing invoice ID",
+			Data:    nil,
+		})
+	}
+
+	id := invoice.ID.Hex()
+	if err := ctrl.repo.Update(c.Context(), id, invoice); err != nil {
+		return c.Status(500).JSON(models.APIResponse{
+			Status:  "error",
+			Message: "Update failed",
+			Data:    nil,
+		})
+	}
+
+	return c.JSON(models.APIResponse{
+		Status:  "success",
+		Message: "Invoice updated",
+		Data:    nil,
+	})
 }

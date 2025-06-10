@@ -3,8 +3,10 @@ package repositories
 import (
 	"context"
 	"go-fiber-api/models"
+
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options" // 👈 Bổ sung dòng này
 )
 
 type StoreSettingRepository struct {
@@ -28,7 +30,7 @@ func (r *StoreSettingRepository) Get(ctx context.Context) (*models.StoreSetting,
 func (r *StoreSettingRepository) Upsert(ctx context.Context, setting models.StoreSetting) error {
 	_, err := r.collection.UpdateOne(ctx, bson.M{}, bson.M{
 		"$set": setting,
-	}, mongo.UpdateOptions{
+	}, &options.UpdateOptions{
 		Upsert: boolPtr(true),
 	})
 	return err
