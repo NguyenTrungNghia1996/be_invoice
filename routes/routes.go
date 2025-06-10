@@ -67,7 +67,7 @@ func Setup(app *fiber.App, db *mongo.Database) {
 	settings.Get("/", settingCtrl.Get)
 
 	// PUT /api/settings -> cập nhật thông tin cửa hàng (tên, SĐT, logo)
-	settings.Put("/", settingCtrl.Upsert)
+	settings.Put("/", settingCtrl.Upsert)//tess
 }
 
 
