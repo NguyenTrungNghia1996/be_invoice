@@ -6,8 +6,15 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
+// type Invoice struct {
+// 	ID        primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+// 	CreatedAt time.Time          `json:"createdAt" bson:"createdAt"` // Giờ GMT+7
+// 	Items     []InvoiceItem      `json:"items" bson:"items"`
+// 	Note      string             `json:"note" bson:"note,omitempty"`
+// }
 type Invoice struct {
 	ID        primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	Code      string             `json:"code" bson:"code"` // Mã hóa đơn: HDXXXXXX
 	CreatedAt time.Time          `json:"createdAt" bson:"createdAt"` // Giờ GMT+7
 	Items     []InvoiceItem      `json:"items" bson:"items"`
 	Note      string             `json:"note" bson:"note,omitempty"`

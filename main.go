@@ -26,6 +26,7 @@ func main() {
 
 	// Seed user admin nếu cần
 	seed.SeedAdminUser()
+	seed.SeedStoreSettings()
 
 	app := fiber.New()
 	app.Use(cors.New())

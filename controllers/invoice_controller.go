@@ -49,28 +49,53 @@ func (ctrl *InvoiceController) Delete(c *fiber.Ctx) error {
 	return c.JSON(models.APIResponse{"success", "Invoices deleted", nil})
 }
 
-// FilterByDate lọc hóa đơn theo khoảng ngày + phân trang + thống kê
+// FilterByDate lọc hóa đơn theo khoảng ngày (tùy chọn), mã code (tùy chọn), phân trang + thống kê
 //
-// @route  GET /api/invoices/filter?from=01/05/2025&to=31/05/2025&page=1&limit=10
+// @route  GET /api/invoices/filter?from=01/05/2025&to=31/05/2025&page=1&limit=10&code=HD20250610
 func (ctrl *InvoiceController) FilterByDate(c *fiber.Ctx) error {
 	fromStr := c.Query("from")
 	toStr := c.Query("to")
+	code := c.Query("code")
 	page := c.QueryInt("page", 1)
 	limit := c.QueryInt("limit", 10)
 
-	fromTime, err1 := time.ParseInLocation("02/01/2006", fromStr, time.FixedZone("GMT+7", 7*3600))
-	toTime, err2 := time.ParseInLocation("02/01/2006", toStr, time.FixedZone("GMT+7", 7*3600))
-	if err1 != nil || err2 != nil {
-		return c.Status(400).JSON(models.APIResponse{"error", "Invalid date format (dd/mm/yyyy)", nil})
-	}
-	toTime = toTime.Add(23*time.Hour + 59*time.Minute + 59*time.Second)
+	var fromTime, toTime time.Time
+	filterByDate := fromStr != "" && toStr != ""
+	filterByCode := code != ""
 
-	invoices, total, err := ctrl.repo.ListByDateRangePaginated(c.Context(), fromTime, toTime, int64(page), int64(limit))
+	if filterByDate {
+		var err1, err2 error
+		fromTime, err1 = time.ParseInLocation("02/01/2006", fromStr, time.FixedZone("GMT+7", 7*3600))
+		toTime, err2 = time.ParseInLocation("02/01/2006", toStr, time.FixedZone("GMT+7", 7*3600))
+		if err1 != nil || err2 != nil {
+			return c.Status(400).JSON(models.APIResponse{"error", "Invalid date format (dd/mm/yyyy)", nil})
+		}
+		toTime = toTime.Add(23*time.Hour + 59*time.Minute + 59*time.Second)
+	}
+
+	var (
+		invoices []models.Invoice
+		total    int64
+		err      error
+	)
+
+	switch {
+	case filterByDate && filterByCode:
+		invoices, total, err = ctrl.repo.ListByCodeAndDatePaginated(c.Context(), code, fromTime, toTime, int64(page), int64(limit))
+	case filterByDate:
+		invoices, total, err = ctrl.repo.ListByDateRangePaginated(c.Context(), fromTime, toTime, int64(page), int64(limit))
+	case filterByCode:
+		invoices, err = ctrl.repo.ListByCode(c.Context(), code)
+		total = int64(len(invoices))
+	default:
+		invoices, total, err = ctrl.repo.ListPaginated(c.Context(), int64(page), int64(limit))
+	}
+
 	if err != nil {
 		return c.Status(500).JSON(models.APIResponse{"error", "List failed", nil})
 	}
 
-	// Thống kê sản phẩm
+	// Thống kê sản phẩm trên kết quả trả về
 	type ProductStats struct {
 		Name     string  `json:"name"`
 		Quantity int     `json:"quantity"`
