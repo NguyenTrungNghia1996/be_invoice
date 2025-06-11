@@ -11,37 +11,18 @@ import (
 
 // Setup cấu hình toàn bộ route cho ứng dụng
 func Setup(app *fiber.App, db *mongo.Database) {
-	// === Public routes ===
-	// POST /login -> đăng nhập
-	app.Post("/login", controllers.Login)
-
-	// GET /test -> test không cần token
-	app.Get("/test", controllers.Hello)
-
-	// === Protected API routes ===
+	app.Post("/login", controllers.Login) // POST /login -> đăng nhập
+	app.Get("/test", controllers.Hello) // GET /test -> test không cần token
 	api := app.Group("/api", middleware.Protected())
-
-	// GET /api/test2 -> test có token
-	api.Get("/test2", controllers.Hello)
-
-	// PUT /api/presigned_url -> lấy URL upload ảnh (logo,...)
-	api.Put("/presigned_url", controllers.GetUploadUrl)
-
+	api.Get("/test2", controllers.Hello) // GET /api/test2 -> test có token
+	api.Put("/presigned_url", controllers.GetUploadUrl)// PUT /api/presigned_url -> lấy URL upload ảnh (logo,...)
 	// === Product routes ===
 	productController := controllers.NewProductController(repositories.NewProductRepository(db))
 	products := api.Group("/products")
-
-	// GET /api/products?page=1&limit=10&search=abc -> danh sách sản phẩm
-	products.Get("/", productController.List)
-
-	// POST /api/products -> tạo sản phẩm
-	products.Post("/", productController.Create)
-
-	// PUT /api/products -> cập nhật sản phẩm (ID trong body)
-	products.Put("/", productController.Update)
-
-	// DELETE /api/products?id=abc,def -> xóa nhiều sản phẩm
-	products.Delete("/", productController.Delete)
+	products.Get("/", productController.List)// GET /api/products?page=1&limit=10&search=abc -> danh sách sản phẩm
+	products.Post("/", productController.Create)// POST /api/products -> tạo sản phẩm
+	products.Put("/", productController.Update) 	// PUT /api/products -> cập nhật sản phẩm (ID trong body)
+	products.Delete("/", productController.Delete)	// DELETE /api/products?id=abc,def -> xóa nhiều sản phẩm
 
 	// === Invoice routes ===
 	invoiceController := controllers.NewInvoiceController(repositories.NewInvoiceRepository(db))
@@ -55,5 +36,6 @@ func Setup(app *fiber.App, db *mongo.Database) {
 	settingCtrl := controllers.NewStoreSettingController(repositories.NewStoreSettingRepository(db))
 	settings := api.Group("/settings")
 	settings.Get("/", settingCtrl.Get) // GET /api/settings -> lấy thông tin cửa hàng
-	settings.Put("/", settingCtrl.Upsert)}// PUT /api/settings -> cập nhật thông tin cửa hàng (tên, SĐT, logo)
+	settings.Put("/", settingCtrl.Upsert)// PUT /api/settings -> cập nhật thông tin cửa hàng (tên, SĐT, logo)
+}
 

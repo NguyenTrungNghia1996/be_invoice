@@ -29,9 +29,11 @@ func main() {
 	seed.SeedStoreSettings()
 
 	app := fiber.New()
+	app.Use(recover.New())        // Bắt panic để tránh server bị crash
 	app.Use(cors.New())
 	routes.Setup(app, config.DB)
 
 	port := os.Getenv("PORT")
 	log.Fatal(app.Listen(":" + port))
+	log.Println("🚀 Server đang chạy tại cổng:", port)
 }
