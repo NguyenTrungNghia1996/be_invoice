@@ -30,12 +30,27 @@ func NewInvoiceController(repo *repositories.InvoiceRepository) *InvoiceControll
 func (ctrl *InvoiceController) Create(c *fiber.Ctx) error {
 	var invoice models.Invoice
 	if err := c.BodyParser(&invoice); err != nil {
-		return c.Status(400).JSON(models.APIResponse{"error", "Invalid input", nil})
+		return c.Status(400).JSON(models.APIResponse{
+			Status:  "error",
+			Message: "Invalid input",
+			Data:    nil,
+		})
 	}
-	if err := ctrl.repo.Create(c.Context(), invoice); err != nil {
-		return c.Status(500).JSON(models.APIResponse{"error", "Create failed", nil})
+
+	createdInvoice, err := ctrl.repo.Create(c.Context(), invoice)
+	if err != nil {
+		return c.Status(500).JSON(models.APIResponse{
+			Status:  "error",
+			Message: "Create failed",
+			Data:    nil,
+		})
 	}
-	return c.JSON(models.APIResponse{"success", "Invoice created", nil})
+
+	return c.Status(201).JSON(models.APIResponse{
+		Status:  "success",
+		Message: "Invoice created",
+		Data:    createdInvoice,
+	})
 }
 
 // Delete xoá một hoặc nhiều hóa đơn theo ID
