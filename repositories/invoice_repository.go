@@ -46,19 +46,29 @@ func generateInvoiceCode(db *mongo.Database) (string, error) {
 }
 
 // Create tạo hóa đơn mới, lưu thời gian theo GMT+7 và sinh mã hóa đơn tự động
-func (r *InvoiceRepository) Create(ctx context.Context, invoice models.Invoice) error {
+func (r *InvoiceRepository) Create(ctx context.Context, invoice models.Invoice) (*models.Invoice, error) {
 	loc, _ := time.LoadLocation("Asia/Bangkok")
 	invoice.CreatedAt = time.Now().In(loc)
 
 	code, err := generateInvoiceCode(r.collection.Database())
 	if err != nil {
-		return err
+		return nil, err
 	}
 	invoice.Code = code
 
-	_, err = r.collection.InsertOne(ctx, invoice)
-	return err
+	res, err := r.collection.InsertOne(ctx, invoice)
+	if err != nil {
+		return nil, err
+	}
+
+	// Gán lại ID sau khi insert
+	if oid, ok := res.InsertedID.(primitive.ObjectID); ok {
+		invoice.ID = oid
+	}
+
+	return &invoice, nil
 }
+
 
 // DeleteMany xoá nhiều hóa đơn theo ID
 func (r *InvoiceRepository) DeleteMany(ctx context.Context, ids []string) error {
