@@ -24,49 +24,31 @@ func NewInvoiceRepository(db *mongo.Database) *InvoiceRepository {
 
 // generateInvoiceCode tạo mã hóa đơn dạng HD<YYYYMMDD><SEQ>
 func generateInvoiceCode(db *mongo.Database) (string, error) {
-	loc, _ := time.LoadLocation("Asia/Bangkok")
-	now := time.Now().In(loc)
-	dayKey := now.Format("20060102") // YYYYMMDD, ví dụ: 20250610
-	counterID := fmt.Sprintf("invoice-%s", dayKey)
+	// Thay vì LoadLocation, dùng FixedZone để đảm bảo không bị nil
+loc := time.FixedZone("GMT+7", 7*60*60)
+now := time.Now().In(loc)
 
-	filter := bson.M{"_id": counterID}
-	update := bson.M{"$inc": bson.M{"seq": 1}}
-	opts := options.FindOneAndUpdate().SetUpsert(true).SetReturnDocument(options.After)
+dayKey := now.Format("20060102") // YYYYMMDD, ví dụ: 20250610
+counterID := fmt.Sprintf("invoice-%s", dayKey)
 
-	var result struct {
-		Seq int `bson:"seq"`
-	}
-	err := db.Collection("counters").FindOneAndUpdate(context.TODO(), filter, update, opts).Decode(&result)
-	if err != nil {
-		return "", err
-	}
+filter := bson.M{"_id": counterID}
+update := bson.M{"$inc": bson.M{"seq": 1}}
+opts := options.FindOneAndUpdate().SetUpsert(true).SetReturnDocument(options.After)
 
-	code := fmt.Sprintf("HD%s%04d", dayKey, result.Seq) // HD202506100001
-	return code, nil
+var result struct {
+	Seq int `bson:"seq"`
+}
+err := db.Collection("counters").FindOneAndUpdate(context.TODO(), filter, update, opts).Decode(&result)
+if err != nil {
+	return "", err
+}
+
+code := fmt.Sprintf("HD%s%04d", dayKey, result.Seq) // HD202506100001
+return code, nil
 }
 
 // Create tạo hóa đơn mới, lưu thời gian theo GMT+7 và sinh mã hóa đơn tự động
 func (r *InvoiceRepository) Create(ctx context.Context, invoice models.Invoice) (*models.Invoice, error) {
-	// loc, _ := time.LoadLocation("Asia/Bangkok")
-	// invoice.CreatedAt = time.Now().In(loc)
-
-	// code, err := generateInvoiceCode(r.collection.Database())
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// invoice.Code = code
-
-	// res, err := r.collection.InsertOne(ctx, invoice)
-	// if err != nil {
-	// 	return nil, err
-	// }
-
-	// // Gán lại ID sau khi insert
-	// if oid, ok := res.InsertedID.(primitive.ObjectID); ok {
-	// 	invoice.ID = oid
-	// }
-
-	// return &invoice, nil
 	loc := time.FixedZone("GMT+7", 7*60*60) // luôn đảm bảo đúng múi giờ GMT+7
 	invoice.CreatedAt = time.Now().In(loc)
 
