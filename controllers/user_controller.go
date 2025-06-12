@@ -6,7 +6,6 @@ import (
 	"go-fiber-api/utils"
 
 	"github.com/gofiber/fiber/v2"
-	"log"
 	"strings"
 	"github.com/golang-jwt/jwt"
 	"os"

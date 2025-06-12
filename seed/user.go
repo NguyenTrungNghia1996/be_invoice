@@ -31,5 +31,5 @@ func SeedAdminUser() {
 		fmt.Println("❌ Failed to seed admin:", err)
 		return
 	}
-	fmt.Println("🚀 Admin user seeded successfully: username=admin password=admin123")
+	fmt.Println("🚀 Admin user seeded successfully: username=admin password=admin123",admin)
 }
