@@ -16,6 +16,13 @@ func Setup(app *fiber.App, db *mongo.Database) {
 	api := app.Group("/api", middleware.Protected())
 	api.Get("/test2", controllers.Hello) // GET /api/test2 -> test có token
 	api.Put("/presigned_url", controllers.GetUploadUrl)// PUT /api/presigned_url -> lấy URL upload ảnh (logo,...)
+
+	usersGroup := api.Group("/users")
+
+	usersGroup.Post("/", controllers.CreateUser)                // Tạo user mới
+	usersGroup.Get("/", controllers.GetUsersByRole)             // Lấy danh sách user theo role (?role=)
+	usersGroup.Put("/person", controllers.UpdateUserPersonID)   // Cập nhật person_id cho user
+	usersGroup.Put("/password", controllers.ChangeUserPassword) // Đổi mật khẩu (kiểm tra mật khẩu cũ)
 	// === Product routes ===
 	productController := controllers.NewProductController(repositories.NewProductRepository(db))
 	products := api.Group("/products")
