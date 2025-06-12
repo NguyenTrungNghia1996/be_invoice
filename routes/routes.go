@@ -19,10 +19,12 @@ func Setup(app *fiber.App, db *mongo.Database) {
 
 	usersGroup := api.Group("/users")
 
-	usersGroup.Post("/", controllers.CreateUser)                // Tạo user mới
-	usersGroup.Get("/", controllers.GetUsersByRole)             // Lấy danh sách user theo role (?role=)
-	usersGroup.Put("/person", controllers.UpdateUserPersonID)   // Cập nhật person_id cho user
-	usersGroup.Put("/password", controllers.ChangeUserPassword) // Đổi mật khẩu (kiểm tra mật khẩu cũ)
+	usersGroup.Post("/", controllers.CreateUser)                            // Tạo user mới
+	usersGroup.Get("/", controllers.GetUsersByRole)                         // Lấy danh sách user theo role (?role=)
+	usersGroup.Put("/person", controllers.UpdateUserPersonID)               // Cập nhật person_id cho user
+	usersGroup.Put("/password", controllers.ChangeUserPassword)             // Đổi mật khẩu (kiểm tra mật khẩu cũ)
+	usersGroup.Put("/", controllers.UpdateUser)                             // Cập nhật thông tin cơ bản của user
+	usersGroup.Delete("/", middleware.AdminOnly(), controllers.DeleteUsers) // Xoá user, chỉ admin được phép
 	// === Product routes ===
 	productController := controllers.NewProductController(repositories.NewProductRepository(db))
 	products := api.Group("/products")
