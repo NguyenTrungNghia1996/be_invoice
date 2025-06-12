@@ -4,7 +4,7 @@ import (
 	"go-fiber-api/models"
 	"go-fiber-api/repositories"
 	"go-fiber-api/utils"
-
+	"log"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -29,7 +29,6 @@ func Login(c *fiber.Ctx) error {
 			Data:    nil,
 		})
 	}
-
 	token, _ := utils.GenerateJWT(user.ID, user.Role, user.PersonID)
 	return c.JSON(models.APIResponse{
 		Status:  "success",

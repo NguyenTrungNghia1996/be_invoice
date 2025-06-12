@@ -6,6 +6,10 @@ import (
 	"go-fiber-api/utils"
 
 	"github.com/gofiber/fiber/v2"
+	"log"
+	"strings"
+	"github.com/golang-jwt/jwt"
+	"os"
 )
 
 // CreateUser handles the creation of a new user
@@ -145,12 +149,13 @@ func UpdateUserPersonID(c *fiber.Ctx) error {
 //	}
 func ChangeUserPassword(c *fiber.Ctx) error {
 	var body struct {
-		ID          string `json:"id"`
 		OldPassword string `json:"old_password"`
 		NewPassword string `json:"new_password"`
 	}
 
-	if err := c.BodyParser(&body); err != nil || body.ID == "" || body.OldPassword == "" || body.NewPassword == "" {
+	// Gọi BodyParser đúng 1 lần
+	err := c.BodyParser(&body)
+	if err != nil || body.OldPassword == "" || body.NewPassword == "" {
 		return c.Status(fiber.StatusBadRequest).JSON(models.APIResponse{
 			Status:  "error",
 			Message: "Invalid data",
@@ -158,7 +163,52 @@ func ChangeUserPassword(c *fiber.Ctx) error {
 		})
 	}
 
-	user, err := repositories.FindUserByID(body.ID)
+	// Lấy token từ header
+	authHeader := c.Get("Authorization")
+	if authHeader == "" || !strings.HasPrefix(authHeader, "Bearer ") {
+		return c.Status(fiber.StatusUnauthorized).JSON(models.APIResponse{
+			Status:  "error",
+			Message: "Missing or invalid Authorization header",
+			Data:    nil,
+		})
+	}
+
+	tokenStr := strings.TrimPrefix(authHeader, "Bearer ")
+	token, err := jwt.Parse(tokenStr, func(token *jwt.Token) (interface{}, error) {
+		// Kiểm tra signing method
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fiber.NewError(fiber.StatusUnauthorized, "Unexpected signing method")
+		}
+		return []byte(os.Getenv("JWT_SECRET")), nil
+	})
+
+	if err != nil || !token.Valid {
+		return c.Status(fiber.StatusUnauthorized).JSON(models.APIResponse{
+			Status:  "error",
+			Message: "Invalid token",
+			Data:    nil,
+		})
+	}
+
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		return c.Status(fiber.StatusUnauthorized).JSON(models.APIResponse{
+			Status:  "error",
+			Message: "Invalid token claims",
+			Data:    nil,
+		})
+	}
+
+	userID, ok := claims["id"].(string)
+	if !ok || userID == "" {
+		return c.Status(fiber.StatusUnauthorized).JSON(models.APIResponse{
+			Status:  "error",
+			Message: "User ID not found in token",
+			Data:    nil,
+		})
+	}
+	// Tìm user
+	user, err := repositories.FindUserByID(userID)
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(models.APIResponse{
 			Status:  "error",
@@ -167,6 +217,7 @@ func ChangeUserPassword(c *fiber.Ctx) error {
 		})
 	}
 
+	// Kiểm tra mật khẩu cũ
 	if !utils.CheckPasswordHash(body.OldPassword, user.Password) {
 		return c.Status(fiber.StatusUnauthorized).JSON(models.APIResponse{
 			Status:  "error",
@@ -175,16 +226,18 @@ func ChangeUserPassword(c *fiber.Ctx) error {
 		})
 	}
 
+	// Mã hoá mật khẩu mới
 	hashed, err := utils.HashPassword(body.NewPassword)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(models.APIResponse{
 			Status:  "error",
-			Message: "Unable to encrypt passwordu",
+			Message: "Unable to encrypt password",
 			Data:    nil,
 		})
 	}
 
-	err = repositories.UpdateUserPassword(body.ID, hashed)
+	// Cập nhật mật khẩu
+	err = repositories.UpdateUserPassword(userID, hashed)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(models.APIResponse{
 			Status:  "error",

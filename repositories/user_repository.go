@@ -85,8 +85,14 @@ func UpdateUserPassword(id string, hashedPassword string) error {
 // Lấy user theo ID
 func FindUserByID(id string) (*models.User, error) {
 	var user models.User
-	objID := id
-	err := config.DB.Collection("users").FindOne(context.TODO(), bson.M{"_id": objID}).Decode(&user)
+
+	// ✅ Chuyển string sang ObjectID
+	objID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return nil, err
+	}
+
+	err = config.DB.Collection("users").FindOne(context.TODO(), bson.M{"_id": objID}).Decode(&user)
 	if err != nil {
 		return nil, err
 	}

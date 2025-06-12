@@ -16,7 +16,7 @@ func SeedAdminUser() {
 	var existing models.User
 	err := collection.FindOne(context.TODO(), bson.M{"role": "admin"}).Decode(&existing)
 	if err != mongo.ErrNoDocuments {
-		fmt.Println("✅ Admin user already exists.")
+		fmt.Println("✅ Admin user already exists.aa")
 		return
 	}
 	password, _ := utils.HashPassword("admin123")
