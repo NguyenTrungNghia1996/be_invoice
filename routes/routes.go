@@ -26,18 +26,32 @@ func Setup(app *fiber.App, db *mongo.Database) {
 	// === Product routes ===
 	productController := controllers.NewProductController(repositories.NewProductRepository(db))
 	products := api.Group("/products")
+<<<<<<< HEAD
 	products.Get("/", productController.List)                              // GET /api/products?page=1&limit=10&search=abc -> danh sách sản phẩm
 	products.Post("/", productController.Create)                           // POST /api/products -> tạo sản phẩm
 	products.Put("/", productController.Update)                            // PUT /api/products -> cập nhật sản phẩm (ID trong body)
 	products.Delete("/", middleware.AdminOnly(), productController.Delete) // DELETE /api/products?id=abc,def -> xóa nhiều sản phẩm
+=======
+	products.Get("/", productController.List)// GET /api/products?page=1&limit=10&search=abc -> danh sách sản phẩm
+	products.Post("/", productController.Create)// POST /api/products -> tạo sản phẩm
+	products.Put("/", productController.Update) 	// PUT /api/products -> cập nhật sản phẩm (ID trong body)
+	products.Delete("/",middleware.AdminOnly(), productController.Delete)	// DELETE /api/products?id=abc,def -> xóa nhiều sản phẩm
+>>>>>>> 558c3ce226d484b695280a0fd625f2c30f35e93a
 
 	// === Invoice routes ===
 	invoiceController := controllers.NewInvoiceController(repositories.NewInvoiceRepository(db))
 	invoices := api.Group("/invoices")
+<<<<<<< HEAD
 	invoices.Post("/", invoiceController.Create)                           // POST /api/invoices -> tạo hóa đơn
 	invoices.Delete("/", middleware.AdminOnly(), invoiceController.Delete) // DELETE /api/invoices?id=abc,def -> xóa hóa đơn
 	invoices.Get("/", invoiceController.FilterByDate)                      // GET /api/invoices?from=dd/mm/yyyy&to=dd/mm/yyyy&page=1&limit=10 -> lọc hóa đơn theo ngày
 	invoices.Put("/", invoiceController.Update)                            // PUT /api/invoices -> cập nhật hóa đơn (ID trong body)
+=======
+	invoices.Post("/", invoiceController.Create)// POST /api/invoices -> tạo hóa đơn
+	invoices.Delete("/", middleware.AdminOnly(), invoiceController.Delete)// DELETE /api/invoices?id=abc,def -> xóa hóa đơn
+	invoices.Get("/", invoiceController.FilterByDate)	// GET /api/invoices?from=dd/mm/yyyy&to=dd/mm/yyyy&page=1&limit=10 -> lọc hóa đơn theo ngày
+	invoices.Put("/", invoiceController.Update)	// PUT /api/invoices -> cập nhật hóa đơn (ID trong body)
+>>>>>>> 558c3ce226d484b695280a0fd625f2c30f35e93a
 
 	// === Store setting routes ===
 	settingCtrl := controllers.NewStoreSettingController(repositories.NewStoreSettingRepository(db))
