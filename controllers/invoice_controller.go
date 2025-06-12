@@ -19,14 +19,15 @@ func NewInvoiceController(repo *repositories.InvoiceRepository) *InvoiceControll
 // Create tạo hóa đơn mới
 //
 // @route  POST /api/invoices
-// @body   {
-//   "storeName": "Shop ABC",
-//   "phone": "0912345678",
-//   "items": [
-//     { "productId": "xxx", "name": "Áo sơ mi", "quantity": 2, "price": 150000 }
-//   ],
-//   "note": "Khách mua online"
-// }
+//
+//	@body   {
+//	  "storeName": "Shop ABC",
+//	  "phone": "0912345678",
+//	  "items": [
+//	    { "productId": "xxx", "name": "Áo sơ mi", "quantity": 2, "price": 150000 }
+//	  ],
+//	  "note": "Khách mua online"
+//	}
 func (ctrl *InvoiceController) Create(c *fiber.Ctx) error {
 	var invoice models.Invoice
 	if err := c.BodyParser(&invoice); err != nil {
@@ -59,9 +60,9 @@ func (ctrl *InvoiceController) Create(c *fiber.Ctx) error {
 func (ctrl *InvoiceController) Delete(c *fiber.Ctx) error {
 	ids := strings.Split(c.Query("id"), ",")
 	if err := ctrl.repo.DeleteMany(c.Context(), ids); err != nil {
-		return c.Status(500).JSON(models.APIResponse{"error", "Delete failed", nil})
+		return c.Status(500).JSON(models.APIResponse{Status: "error", Message: "Delete failed", Data: nil})
 	}
-	return c.JSON(models.APIResponse{"success", "Invoices deleted", nil})
+	return c.JSON(models.APIResponse{Status: "success", Message: "Invoices deleted", Data: nil})
 }
 
 // FilterByDate lọc hóa đơn theo khoảng ngày (tùy chọn), mã code (tùy chọn), phân trang + thống kê
@@ -83,7 +84,7 @@ func (ctrl *InvoiceController) FilterByDate(c *fiber.Ctx) error {
 		fromTime, err1 = time.ParseInLocation("02/01/2006", fromStr, time.FixedZone("GMT+7", 7*3600))
 		toTime, err2 = time.ParseInLocation("02/01/2006", toStr, time.FixedZone("GMT+7", 7*3600))
 		if err1 != nil || err2 != nil {
-			return c.Status(400).JSON(models.APIResponse{"error", "Invalid date format (dd/mm/yyyy)", nil})
+			return c.Status(400).JSON(models.APIResponse{Status: "error", Message: "Invalid date format (dd/mm/yyyy)", Data: nil})
 		}
 		toTime = toTime.Add(23*time.Hour + 59*time.Minute + 59*time.Second)
 	}
@@ -107,7 +108,7 @@ func (ctrl *InvoiceController) FilterByDate(c *fiber.Ctx) error {
 	}
 
 	if err != nil {
-		return c.Status(500).JSON(models.APIResponse{"error", "List failed", nil})
+		return c.Status(500).JSON(models.APIResponse{Status: "error", Message: "List failed", Data: nil})
 	}
 
 	// Thống kê sản phẩm trên kết quả trả về
@@ -131,7 +132,7 @@ func (ctrl *InvoiceController) FilterByDate(c *fiber.Ctx) error {
 		}
 	}
 
-	return c.JSON(models.APIResponse{"success", "Filtered invoices", fiber.Map{
+	return c.JSON(models.APIResponse{Status: "success", Message: "Filtered invoices", Data: fiber.Map{
 		"invoices":     invoices,
 		"page":         page,
 		"limit":        limit,
@@ -144,15 +145,16 @@ func (ctrl *InvoiceController) FilterByDate(c *fiber.Ctx) error {
 // Update cập nhật thông tin hóa đơn (sản phẩm, số lượng, cửa hàng, ghi chú)
 //
 // @route PUT /api/invoices
-// @body  {
-//   "id": "66ab...",
-//   "storeName": "Shop XYZ",
-//   "phone": "0909123456",
-//   "items": [
-//     { "productId": "xxx", "name": "Áo thun", "quantity": 1, "price": 120000 }
-//   ],
-//   "note": "Cập nhật đơn hàng"
-// }
+//
+//	@body  {
+//	  "id": "66ab...",
+//	  "storeName": "Shop XYZ",
+//	  "phone": "0909123456",
+//	  "items": [
+//	    { "productId": "xxx", "name": "Áo thun", "quantity": 1, "price": 120000 }
+//	  ],
+//	  "note": "Cập nhật đơn hàng"
+//	}
 func (ctrl *InvoiceController) Update(c *fiber.Ctx) error {
 	var invoice models.Invoice
 	if err := c.BodyParser(&invoice); err != nil {
