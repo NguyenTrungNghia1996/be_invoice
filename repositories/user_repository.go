@@ -82,6 +82,25 @@ func UpdateUserPassword(id string, hashedPassword string) error {
 	return err
 }
 
+// UpdateUser cập nhật thông tin cơ bản của user (username, email, role)
+func UpdateUser(id string, user models.User) error {
+	filter := bson.M{"_id": id}
+	update := bson.M{"$set": bson.M{
+		"username": user.Username,
+		"email":    user.Email,
+		"role":     user.Role,
+	}}
+	_, err := config.DB.Collection("users").UpdateOne(context.TODO(), filter, update)
+	return err
+}
+
+// DeleteUsers xoá nhiều user theo danh sách ID
+func DeleteUsers(ids []string) error {
+	filter := bson.M{"_id": bson.M{"$in": ids}}
+	_, err := config.DB.Collection("users").DeleteMany(context.TODO(), filter)
+	return err
+}
+
 // Lấy user theo ID
 func FindUserByID(id string) (*models.User, error) {
 	var user models.User

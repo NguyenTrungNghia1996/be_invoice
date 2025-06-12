@@ -6,9 +6,9 @@ import (
 	"go-fiber-api/utils"
 
 	"github.com/gofiber/fiber/v2"
-	"strings"
 	"github.com/golang-jwt/jwt"
 	"os"
+	"strings"
 )
 
 // CreateUser handles the creation of a new user
@@ -250,4 +250,40 @@ func ChangeUserPassword(c *fiber.Ctx) error {
 		Message: "Password changed successfully",
 		Data:    nil,
 	})
+}
+
+// UpdateUser cập nhật thông tin cơ bản của người dùng
+//
+// @route PUT /api/users
+// @body
+//
+//	{
+//	    "id": "665e1b3fa6ef0c2d7e3e594f",
+//	    "username": "newname",
+//	    "email": "new@example.com",
+//	    "role": "member"
+//	}
+func UpdateUser(c *fiber.Ctx) error {
+	var user models.User
+	if err := c.BodyParser(&user); err != nil || user.ID == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(models.APIResponse{Status: "error", Message: "Invalid data", Data: nil})
+	}
+	if err := repositories.UpdateUser(user.ID, user); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(models.APIResponse{Status: "error", Message: "Unable to update user", Data: nil})
+	}
+	return c.JSON(models.APIResponse{Status: "success", Message: "User updated", Data: nil})
+}
+
+// DeleteUsers xoá một hoặc nhiều người dùng
+//
+// @route DELETE /api/users?id=abc,def
+func DeleteUsers(c *fiber.Ctx) error {
+	ids := strings.Split(c.Query("id"), ",")
+	if len(ids) == 0 || ids[0] == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(models.APIResponse{Status: "error", Message: "Missing id", Data: nil})
+	}
+	if err := repositories.DeleteUsers(ids); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(models.APIResponse{Status: "error", Message: "Delete failed", Data: nil})
+	}
+	return c.JSON(models.APIResponse{Status: "success", Message: "Deleted successfully", Data: nil})
 }
