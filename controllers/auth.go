@@ -4,7 +4,6 @@ import (
 	"go-fiber-api/models"
 	"go-fiber-api/repositories"
 	"go-fiber-api/utils"
-	"log"
 	"github.com/gofiber/fiber/v2"
 )
 

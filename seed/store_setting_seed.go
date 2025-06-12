@@ -22,7 +22,8 @@ func SeedStoreSettings() {
 	setting := models.StoreSetting{
 		StoreName: "Cửa hàng Trung Nghĩa",
 		Phone:     "0911222333",
-		LogoUrl:   "https://cdn.example.com/logo.png",
+		Address:"Địa chỉ",
+		LogoUrl:   "",
 	}
 
 	_, err = collection.InsertOne(context.TODO(), setting)
@@ -30,5 +31,5 @@ func SeedStoreSettings() {
 		fmt.Println("❌ Failed to seed store setting:", err)
 		return
 	}
-	fmt.Println("🚀 Store settings seeded successfully.")
+	fmt.Println("🚀 Store settings seeded successfully.",setting)
 }
