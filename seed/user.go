@@ -46,6 +46,7 @@ func seedUserIfNotExists(username, password, role string) {
 }
 
 func SeedAdminUser() {
+	
 	seedUserIfNotExists("admin", "admin123", "admin")
 	seedUserIfNotExists("user", "user123", "user")
 }
