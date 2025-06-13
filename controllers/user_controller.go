@@ -18,7 +18,6 @@ import (
 //	{
 //	  "username": "teacher1",
 //	  "password": "123456",
-//	  "email": "teacher@example.com",
 //	  "role": "member",
 //	}
 func CreateUser(c *fiber.Ctx) error {
@@ -222,15 +221,14 @@ func ChangeUserPassword(c *fiber.Ctx) error {
 //	{
 //	    "id": "665e1b3fa6ef0c2d7e3e594f",
 //	    "username": "newname",
-//	    "email": "new@example.com",
 //	    "role": "member"
 //	}
 func UpdateUser(c *fiber.Ctx) error {
 	var user models.User
-	if err := c.BodyParser(&user); err != nil || user.ID == "" {
+	if err := c.BodyParser(&user); err != nil || user.ID.IsZero() {
 		return c.Status(fiber.StatusBadRequest).JSON(models.APIResponse{Status: "error", Message: "Invalid data", Data: nil})
 	}
-	if err := repositories.UpdateUser(user.ID, user); err != nil {
+	if err := repositories.UpdateUser(user.ID.Hex(), user); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(models.APIResponse{Status: "error", Message: "Unable to update user", Data: nil})
 	}
 	return c.JSON(models.APIResponse{Status: "success", Message: "User updated", Data: nil})

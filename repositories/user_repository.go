@@ -80,7 +80,7 @@ func UpdateUserPassword(id string, hashedPassword string) error {
 	return err
 }
 
-// UpdateUser cập nhật thông tin cơ bản của user (username, email, role)
+// UpdateUser cập nhật thông tin cơ bản của user (username, role)
 func UpdateUser(id string, user models.User) error {
 	objID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
@@ -89,7 +89,6 @@ func UpdateUser(id string, user models.User) error {
 	filter := bson.M{"_id": objID}
 	update := bson.M{"$set": bson.M{
 		"username": user.Username,
-		"email":    user.Email,
 		"role":     user.Role,
 	}}
 	_, err = config.DB.Collection("users").UpdateOne(context.TODO(), filter, update)
