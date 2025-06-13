@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -17,11 +18,10 @@ func CheckPasswordHash(password, hash string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
 	return err == nil
 }
-func GenerateJWT(id, role, personID string) (string, error) {
+func GenerateJWT(id primitive.ObjectID, role string) (string, error) {
 	claims := jwt.MapClaims{
-		"id":   id,
+		"id":   id.Hex(),
 		"role": role,
-		"pid":  personID,
 		"exp":  time.Now().Add(12 * time.Hour).Unix(), // Hết hạn sau 12 giờ
 	}
 
