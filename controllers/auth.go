@@ -1,10 +1,10 @@
 package controllers
 
 import (
+	"github.com/gofiber/fiber/v2"
 	"go-fiber-api/models"
 	"go-fiber-api/repositories"
 	"go-fiber-api/utils"
-	"github.com/gofiber/fiber/v2"
 )
 
 func Login(c *fiber.Ctx) error {
@@ -28,15 +28,14 @@ func Login(c *fiber.Ctx) error {
 			Data:    nil,
 		})
 	}
-	token, _ := utils.GenerateJWT(user.ID, user.Role, user.PersonID)
+	token, _ := utils.GenerateJWT(user.ID, user.Role)
 	return c.JSON(models.APIResponse{
 		Status:  "success",
 		Message: "Login successful",
 		Data: fiber.Map{
-			"id":       user.ID,
-			"role":     user.Role,
-			"personID": user.PersonID,
-			"token":    token,
+			"id":    user.ID,
+			"role":  user.Role,
+			"token": token,
 		},
 	})
 }
