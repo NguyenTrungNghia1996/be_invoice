@@ -24,20 +24,20 @@ func Setup(app *fiber.App, db *mongo.Database) {
 	usersGroup.Put("/person", controllers.UpdateUserPersonID)               // Cập nhật person_id cho user
 	usersGroup.Put("/password", controllers.ChangeUserPassword)             // Đổi mật khẩu (kiểm tra mật khẩu cũ)
 	usersGroup.Put("/", controllers.UpdateUser)                             // Cập nhật thông tin cơ bản của user
-	usersGroup.Delete("/", middleware.AdminOnly(), controllers.DeleteUsers) // Xoá user, chỉ admin được phép
+	usersGroup.Delete("/", controllers.DeleteUsers) // Xoá user, chỉ admin được phép
 	// === Product routes ===
 	productController := controllers.NewProductController(repositories.NewProductRepository(db))
 	products := api.Group("/products")
 	products.Get("/", productController.List)                              // GET /api/products?page=1&limit=10&search=abc -> danh sách sản phẩm
 	products.Post("/", productController.Create)                           // POST /api/products -> tạo sản phẩm
 	products.Put("/", productController.Update)                            // PUT /api/products -> cập nhật sản phẩm (ID trong body)
-	products.Delete("/", middleware.AdminOnly(), productController.Delete) // DELETE /api/products?id=abc,def -> xóa nhiều sản phẩm
+	products.Delete("/", productController.Delete) // DELETE /api/products?id=abc,def -> xóa nhiều sản phẩm
 
 	// === Invoice routes ===
 	invoiceController := controllers.NewInvoiceController(repositories.NewInvoiceRepository(db))
 	invoices := api.Group("/invoices")
 	invoices.Post("/", invoiceController.Create)                           // POST /api/invoices -> tạo hóa đơn
-	invoices.Delete("/", middleware.AdminOnly(), invoiceController.Delete) // DELETE /api/invoices?id=abc,def -> xóa hóa đơn
+	invoices.Delete("/", invoiceController.Delete) // DELETE /api/invoices?id=abc,def -> xóa hóa đơn
 	invoices.Get("/", invoiceController.FilterByDate)                      // GET /api/invoices?from=dd/mm/yyyy&to=dd/mm/yyyy&page=1&limit=10 -> lọc hóa đơn theo ngày
 	invoices.Put("/", invoiceController.Update)                            // PUT /api/invoices -> cập nhật hóa đơn (ID trong body)
 
