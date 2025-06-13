@@ -21,9 +21,9 @@ func FindUserByUsername(username string) (*models.User, error) {
 	return &user, nil
 }
 
-// Tạo user mới và gắn với giáo viên (PersonID)
+// CreateUser tạo mới một user
 func CreateUser(user *models.User) error {
-	user.ID = primitive.NewObjectID().Hex()
+	user.ID = primitive.NewObjectID()
 	_, err := config.DB.Collection("users").InsertOne(context.TODO(), user)
 	return err
 }
@@ -68,35 +68,42 @@ func GetUsersByRole(role string) ([]models.User, error) {
 
 	return users, nil
 }
-func UpdateUserPersonID(id string, personID string) error {
-	filter := bson.M{"_id": id}
-	update := bson.M{"$set": bson.M{"person_id": personID}}
-	_, err := config.DB.Collection("users").UpdateOne(context.TODO(), filter, update)
-	return err
-}
 
 func UpdateUserPassword(id string, hashedPassword string) error {
-	filter := bson.M{"_id": id}
+	objID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return err
+	}
+	filter := bson.M{"_id": objID}
 	update := bson.M{"$set": bson.M{"password": hashedPassword}}
-	_, err := config.DB.Collection("users").UpdateOne(context.TODO(), filter, update)
+	_, err = config.DB.Collection("users").UpdateOne(context.TODO(), filter, update)
 	return err
 }
 
-// UpdateUser cập nhật thông tin cơ bản của user (username, email, role)
+// UpdateUser cập nhật thông tin cơ bản của user (username, role)
 func UpdateUser(id string, user models.User) error {
-	filter := bson.M{"_id": id}
+	objID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return err
+	}
+	filter := bson.M{"_id": objID}
 	update := bson.M{"$set": bson.M{
 		"username": user.Username,
-		"email":    user.Email,
 		"role":     user.Role,
 	}}
-	_, err := config.DB.Collection("users").UpdateOne(context.TODO(), filter, update)
+	_, err = config.DB.Collection("users").UpdateOne(context.TODO(), filter, update)
 	return err
 }
 
 // DeleteUsers xoá nhiều user theo danh sách ID
 func DeleteUsers(ids []string) error {
-	filter := bson.M{"_id": bson.M{"$in": ids}}
+	var objIDs []primitive.ObjectID
+	for _, id := range ids {
+		if objID, err := primitive.ObjectIDFromHex(id); err == nil {
+			objIDs = append(objIDs, objID)
+		}
+	}
+	filter := bson.M{"_id": bson.M{"$in": objIDs}}
 	_, err := config.DB.Collection("users").DeleteMany(context.TODO(), filter)
 	return err
 }
