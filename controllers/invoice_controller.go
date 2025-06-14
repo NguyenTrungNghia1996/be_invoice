@@ -72,8 +72,16 @@ func (ctrl *InvoiceController) FilterByDate(c *fiber.Ctx) error {
 	fromStr := c.Query("from")
 	toStr := c.Query("to")
 	code := c.Query("code")
+	pageStr := c.Query("page")
+	limitStr := c.Query("limit")
+
 	page := c.QueryInt("page", 1)
 	limit := c.QueryInt("limit", 10)
+
+	// Nếu không gửi limit hoặc giá trị bằng 0 thì lấy toàn bộ danh sách
+	if limitStr == "" || limit == 0 {
+		limit = 0
+	}
 
 	var fromTime, toTime time.Time
 	filterByDate := fromStr != "" && toStr != ""
