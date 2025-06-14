@@ -25,26 +25,26 @@ func NewInvoiceRepository(db *mongo.Database) *InvoiceRepository {
 // generateInvoiceCode tạo mã hóa đơn dạng HD<YYYYMMDD><SEQ>
 func generateInvoiceCode(db *mongo.Database) (string, error) {
 	// Thay vì LoadLocation, dùng FixedZone để đảm bảo không bị nil
-loc := time.FixedZone("GMT+7", 7*60*60)
-now := time.Now().In(loc)
+	loc := time.FixedZone("GMT+7", 7*60*60)
+	now := time.Now().In(loc)
 
-dayKey := now.Format("20060102") // YYYYMMDD, ví dụ: 20250610
-counterID := fmt.Sprintf("invoice-%s", dayKey)
+	dayKey := now.Format("20060102") // YYYYMMDD, ví dụ: 20250610
+	counterID := fmt.Sprintf("invoice-%s", dayKey)
 
-filter := bson.M{"_id": counterID}
-update := bson.M{"$inc": bson.M{"seq": 1}}
-opts := options.FindOneAndUpdate().SetUpsert(true).SetReturnDocument(options.After)
+	filter := bson.M{"_id": counterID}
+	update := bson.M{"$inc": bson.M{"seq": 1}}
+	opts := options.FindOneAndUpdate().SetUpsert(true).SetReturnDocument(options.After)
 
-var result struct {
-	Seq int `bson:"seq"`
-}
-err := db.Collection("counters").FindOneAndUpdate(context.TODO(), filter, update, opts).Decode(&result)
-if err != nil {
-	return "", err
-}
+	var result struct {
+		Seq int `bson:"seq"`
+	}
+	err := db.Collection("counters").FindOneAndUpdate(context.TODO(), filter, update, opts).Decode(&result)
+	if err != nil {
+		return "", err
+	}
 
-code := fmt.Sprintf("HD%s%04d", dayKey, result.Seq) // HD202506100001
-return code, nil
+	code := fmt.Sprintf("HD%s%04d", dayKey, result.Seq) // HD202506100001
+	return code, nil
 }
 
 // Create tạo hóa đơn mới, lưu thời gian theo GMT+7 và sinh mã hóa đơn tự động
@@ -70,7 +70,6 @@ func (r *InvoiceRepository) Create(ctx context.Context, invoice models.Invoice) 
 
 	return &invoice, nil
 }
-
 
 // DeleteMany xoá nhiều hóa đơn theo ID
 func (r *InvoiceRepository) DeleteMany(ctx context.Context, ids []string) error {
@@ -111,10 +110,11 @@ func (r *InvoiceRepository) ListByDateRangePaginated(ctx context.Context, from, 
 		},
 	}
 
-	opts := options.Find().
-		SetSkip((page - 1) * limit).
-		SetLimit(limit).
-		SetSort(bson.M{"createdAt": -1})
+	opts := options.Find().SetSort(bson.M{"createdAt": -1})
+	if limit > 0 {
+		opts.SetSkip((page - 1) * limit)
+		opts.SetLimit(limit)
+	}
 
 	cursor, err := r.collection.Find(ctx, filter, opts)
 	if err != nil {
@@ -132,10 +132,11 @@ func (r *InvoiceRepository) ListByDateRangePaginated(ctx context.Context, from, 
 
 // ListPaginated phân trang danh sách hóa đơn
 func (r *InvoiceRepository) ListPaginated(ctx context.Context, page, limit int64) ([]models.Invoice, int64, error) {
-	opts := options.Find().
-		SetSkip((page - 1) * limit).
-		SetLimit(limit).
-		SetSort(bson.M{"createdAt": -1})
+	opts := options.Find().SetSort(bson.M{"createdAt": -1})
+	if limit > 0 {
+		opts.SetSkip((page - 1) * limit)
+		opts.SetLimit(limit)
+	}
 
 	cursor, err := r.collection.Find(ctx, bson.M{}, opts)
 	if err != nil {
@@ -195,10 +196,11 @@ func (r *InvoiceRepository) ListByCodeAndDatePaginated(ctx context.Context, code
 			"$lte": to,
 		},
 	}
-	opts := options.Find().
-		SetSkip((page - 1) * limit).
-		SetLimit(limit).
-		SetSort(bson.M{"createdAt": -1})
+	opts := options.Find().SetSort(bson.M{"createdAt": -1})
+	if limit > 0 {
+		opts.SetSkip((page - 1) * limit)
+		opts.SetLimit(limit)
+	}
 
 	cursor, err := r.collection.Find(ctx, filter, opts)
 	if err != nil {
@@ -212,4 +214,3 @@ func (r *InvoiceRepository) ListByCodeAndDatePaginated(ctx context.Context, code
 	total, _ := r.collection.CountDocuments(ctx, filter)
 	return invoices, total, nil
 }
-
