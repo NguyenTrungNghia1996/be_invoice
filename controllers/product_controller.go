@@ -67,7 +67,6 @@ func (ctrl *ProductController) Delete(c *fiber.Ctx) error {
 // List trả về danh sách sản phẩm có phân trang & tìm kiếm
 // Method: GET /api/products?page=1&limit=10&search=tên
 func (ctrl *ProductController) List(c *fiber.Ctx) error {
-	pageStr := c.Query("page")
 	limitStr := c.Query("limit")
 
 	page := c.QueryInt("page", 1)
