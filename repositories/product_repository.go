@@ -59,7 +59,11 @@ func (r *ProductRepository) List(ctx context.Context, page, limit int64, search 
 		filter["name"] = bson.M{"$regex": primitive.Regex{Pattern: search, Options: "i"}}
 	}
 
-	opts := options.Find().SetSkip((page - 1) * limit).SetLimit(limit)
+	opts := options.Find()
+	if limit > 0 {
+		opts.SetSkip((page - 1) * limit)
+		opts.SetLimit(limit)
+	}
 	cursor, err := r.collection.Find(ctx, filter, opts)
 	if err != nil {
 		return nil, 0, err
