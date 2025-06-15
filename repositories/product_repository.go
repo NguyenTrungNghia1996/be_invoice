@@ -26,6 +26,19 @@ func (r *ProductRepository) Create(ctx context.Context, product models.Product) 
 	return err
 }
 
+func (r *ProductRepository) CreateMany(ctx context.Context, products []models.Product) error {
+	var docs []interface{}
+	for i := range products {
+		products[i].ID = primitive.NewObjectID()
+		docs = append(docs, products[i])
+	}
+	if len(docs) == 0 {
+		return nil
+	}
+	_, err := r.collection.InsertMany(ctx, docs)
+	return err
+}
+
 func (r *ProductRepository) Update(ctx context.Context, id string, product models.Product) error {
 	objID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {

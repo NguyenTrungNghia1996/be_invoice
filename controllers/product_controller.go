@@ -89,3 +89,27 @@ func (ctrl *ProductController) List(c *fiber.Ctx) error {
 		"total":    total,
 	}})
 }
+
+// Import tạo nhiều sản phẩm từ danh sách JSON
+// Method: POST /api/products/import
+func (ctrl *ProductController) Import(c *fiber.Ctx) error {
+	var products []models.Product
+	if err := c.BodyParser(&products); err != nil {
+		return c.Status(400).JSON(models.APIResponse{Status: "error", Message: "Invalid input", Data: nil})
+	}
+	if err := ctrl.repo.CreateMany(c.Context(), products); err != nil {
+		return c.Status(500).JSON(models.APIResponse{Status: "error", Message: "Import failed", Data: nil})
+	}
+	return c.JSON(models.APIResponse{Status: "success", Message: "Imported successfully", Data: nil})
+}
+
+// Export trả về toàn bộ sản phẩm dạng JSON có thể nhập lại
+// Method: GET /api/products/export
+func (ctrl *ProductController) Export(c *fiber.Ctx) error {
+	products, _, err := ctrl.repo.List(c.Context(), 1, 0, "")
+	if err != nil {
+		return c.Status(500).JSON(models.APIResponse{Status: "error", Message: "Export failed", Data: nil})
+	}
+	c.Attachment("products.json")
+	return c.JSON(products)
+}
