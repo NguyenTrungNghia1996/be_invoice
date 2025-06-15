@@ -1,11 +1,12 @@
 package controllers
 
 import (
+	"time"
+
 	"github.com/gofiber/fiber/v2"
 	"go-fiber-api/models"
 	"go-fiber-api/repositories"
 	"strings"
-	"time"
 )
 
 type InvoiceController struct {
@@ -193,4 +194,30 @@ func (ctrl *InvoiceController) Update(c *fiber.Ctx) error {
 		Message: "Invoice updated",
 		Data:    nil,
 	})
+}
+
+// Import tạo nhiều hóa đơn từ danh sách JSON
+// Method: POST /api/invoices/import
+func (ctrl *InvoiceController) Import(c *fiber.Ctx) error {
+	var invoices []models.Invoice
+	if err := c.BodyParser(&invoices); err != nil {
+		return c.Status(400).JSON(models.APIResponse{Status: "error", Message: "Invalid input", Data: nil})
+	}
+	for _, inv := range invoices {
+		if _, err := ctrl.repo.Create(c.Context(), inv); err != nil {
+			return c.Status(500).JSON(models.APIResponse{Status: "error", Message: "Import failed", Data: nil})
+		}
+	}
+	return c.JSON(models.APIResponse{Status: "success", Message: "Imported successfully", Data: nil})
+}
+
+// Export trả về danh sách hóa đơn dạng JSON có thể nhập lại
+// Method: GET /api/invoices/export
+func (ctrl *InvoiceController) Export(c *fiber.Ctx) error {
+	invoices, _, err := ctrl.repo.ListPaginated(c.Context(), 1, 0)
+	if err != nil {
+		return c.Status(500).JSON(models.APIResponse{Status: "error", Message: "Export failed", Data: nil})
+	}
+	c.Attachment("invoices.json")
+	return c.JSON(invoices)
 }

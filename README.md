@@ -106,10 +106,14 @@ Tất cả các endpoint (ngoại trừ `/login` và `/test`) đều yêu cầu 
 |`POST`|`/api/products`|Tạo sản phẩm|`{"name":"sp A","price":10000}`|
 |`PUT`|`/api/products`|Cập nhật sản phẩm|`{"id":"...","name":"sp","price":20000}`|
 |`DELETE`|`/api/products?id=a,b`|Xoá sản phẩm|-|
+|`POST`|`/api/products/import`|Nhập danh sách sản phẩm (JSON)|`[{"name":"sp","price":10000}]`|
+|`GET`|`/api/products/export`|Xuất danh sách sản phẩm (JSON)|-|
 |`POST`|`/api/invoices`|Tạo hoá đơn mới|`{"items":[{"productId":"...","name":"Áo","quantity":1,"price":10000}]}`|
 |`DELETE`|`/api/invoices?id=a,b`|Xoá hoá đơn|-|
 |`GET`|`/api/invoices`|Lọc hoá đơn theo ngày và code|-|
 |`PUT`|`/api/invoices`|Cập nhật hoá đơn|`{"id":"...","items":[]}`|
+|`POST`|`/api/invoices/import`|Nhập hoá đơn (JSON)|`[{"items":[]}]`|
+|`GET`|`/api/invoices/export`|Xuất hoá đơn (JSON)|-|
 |`GET`|`/api/settings`|Lấy thông tin cửa hàng|-|
 |`PUT`|`/api/settings`|Cập nhật thông tin cửa hàng|`{"storeName":"Shop"}`|
 
