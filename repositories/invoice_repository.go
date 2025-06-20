@@ -101,8 +101,15 @@ func (r *InvoiceRepository) Update(ctx context.Context, id string, invoice model
 
 // ListByCodeAndDatePaginated lọc theo mã và khoảng ngày. Cả mã và ngày đều có thể bỏ trống.
 // Nếu limit = 0 sẽ trả về toàn bộ kết quả.
-func (r *InvoiceRepository) ListByCodeAndDatePaginated(ctx context.Context, code string, from, to time.Time, page, limit int64) ([]models.Invoice, int64, error) {
-	filter := bson.M{"deletedAt": bson.M{"$exists": false}}
+func (r *InvoiceRepository) ListByCodeAndDatePaginated(ctx context.Context, code string, from, to time.Time, page, limit int64, deleted *bool) ([]models.Invoice, int64, error) {
+	filter := bson.M{}
+	if deleted != nil {
+		if *deleted {
+			filter["deletedAt"] = bson.M{"$exists": true}
+		} else {
+			filter["deletedAt"] = bson.M{"$exists": false}
+		}
+	}
 	if code != "" {
 		filter["code"] = bson.M{"$regex": primitive.Regex{Pattern: code, Options: "i"}}
 	}

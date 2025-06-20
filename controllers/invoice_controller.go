@@ -101,12 +101,13 @@ func (ctrl *InvoiceController) Delete(c *fiber.Ctx) error {
 
 // FilterByDate lọc hóa đơn theo khoảng ngày (tùy chọn), mã code (tùy chọn), phân trang + thống kê
 //
-// @route  GET /api/invoices/filter?from=01/05/2025&to=31/05/2025&page=1&limit=10&code=HD20250610
+// @route  GET /api/invoices/filter?from=01/05/2025&to=31/05/2025&page=1&limit=10&code=HD20250610&deleted=false
 func (ctrl *InvoiceController) FilterByDate(c *fiber.Ctx) error {
 	fromStr := c.Query("from")
 	toStr := c.Query("to")
 	code := c.Query("code")
-       shift := c.Query("shift")
+	shift := c.Query("shift")
+	deletedStr := c.Query("deleted")
 	limitStr := c.Query("limit")
 
 	page := c.QueryInt("page", 1)
@@ -138,7 +139,13 @@ func (ctrl *InvoiceController) FilterByDate(c *fiber.Ctx) error {
 		}
 	}
 
-       invoices, total, err := ctrl.repo.ListByCodeAndDatePaginated(c.Context(), code, fromTime, toTime, int64(page), int64(limit))
+	var deletedPtr *bool
+	if deletedStr != "" {
+		val := strings.ToLower(deletedStr) == "true"
+		deletedPtr = &val
+	}
+
+	invoices, total, err := ctrl.repo.ListByCodeAndDatePaginated(c.Context(), code, fromTime, toTime, int64(page), int64(limit), deletedPtr)
 
 	if err != nil {
 		return c.Status(500).JSON(models.APIResponse{Status: "error", Message: "List failed", Data: nil})
@@ -259,7 +266,7 @@ func (ctrl *InvoiceController) Import(c *fiber.Ctx) error {
 // Export trả về danh sách hóa đơn dạng JSON có thể nhập lại
 // Method: GET /api/invoices/export
 func (ctrl *InvoiceController) Export(c *fiber.Ctx) error {
-       invoices, _, err := ctrl.repo.ListByCodeAndDatePaginated(c.Context(), "", time.Time{}, time.Time{}, 1, 0)
+	invoices, _, err := ctrl.repo.ListByCodeAndDatePaginated(c.Context(), "", time.Time{}, time.Time{}, 1, 0, nil)
 	if err != nil {
 		return c.Status(500).JSON(models.APIResponse{Status: "error", Message: "Export failed", Data: nil})
 	}
