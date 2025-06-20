@@ -108,63 +108,12 @@ func (r *InvoiceRepository) ListByDateRange(ctx context.Context, from, to time.T
 
 // ListByDateRangePaginated lọc hóa đơn theo khoảng ngày + phân trang
 func (r *InvoiceRepository) ListByDateRangePaginated(ctx context.Context, from, to time.Time, page, limit int64, deleted bool) ([]models.Invoice, int64, error) {
-	delFilter := bson.M{"$exists": !deleted}
-	if deleted {
-		delFilter = bson.M{"$exists": true}
-	}
-	filter := bson.M{
-		"deletedAt": delFilter,
-		"createdAt": bson.M{
-			"$gte": from,
-			"$lte": to,
-		},
-	}
-
-	opts := options.Find().SetSort(bson.M{"createdAt": -1})
-	if limit > 0 {
-		opts.SetSkip((page - 1) * limit)
-		opts.SetLimit(limit)
-	}
-
-	cursor, err := r.collection.Find(ctx, filter, opts)
-	if err != nil {
-		return nil, 0, err
-	}
-
-	var invoices []models.Invoice
-	if err := cursor.All(ctx, &invoices); err != nil {
-		return nil, 0, err
-	}
-
-	total, _ := r.collection.CountDocuments(ctx, filter)
-	return invoices, total, nil
+	return r.ListByCodeAndDatePaginated(ctx, "", from, to, page, limit, deleted)
 }
 
 // ListPaginated phân trang danh sách hóa đơn
 func (r *InvoiceRepository) ListPaginated(ctx context.Context, page, limit int64, deleted bool) ([]models.Invoice, int64, error) {
-	opts := options.Find().SetSort(bson.M{"createdAt": -1})
-	if limit > 0 {
-		opts.SetSkip((page - 1) * limit)
-		opts.SetLimit(limit)
-	}
-
-	delFilter := bson.M{"$exists": !deleted}
-	if deleted {
-		delFilter = bson.M{"$exists": true}
-	}
-
-	cursor, err := r.collection.Find(ctx, bson.M{"deletedAt": delFilter}, opts)
-	if err != nil {
-		return nil, 0, err
-	}
-
-	var invoices []models.Invoice
-	if err := cursor.All(ctx, &invoices); err != nil {
-		return nil, 0, err
-	}
-
-	total, _ := r.collection.CountDocuments(ctx, bson.M{"deletedAt": delFilter})
-	return invoices, total, nil
+	return r.ListByCodeAndDatePaginated(ctx, "", time.Time{}, time.Time{}, page, limit, deleted)
 }
 
 // Update cập nhật hóa đơn (sản phẩm, ghi chú)
@@ -186,41 +135,33 @@ func (r *InvoiceRepository) Update(ctx context.Context, id string, invoice model
 
 // ListByCode lọc hóa đơn theo mã code (tìm gần đúng)
 func (r *InvoiceRepository) ListByCode(ctx context.Context, code string, deleted bool) ([]models.Invoice, error) {
-	delFilter := bson.M{"$exists": !deleted}
-	if deleted {
-		delFilter = bson.M{"$exists": true}
-	}
-	filter := bson.M{
-		"deletedAt": delFilter,
-		"code": bson.M{
-			"$regex": primitive.Regex{Pattern: code, Options: "i"},
-		},
-	}
-	cursor, err := r.collection.Find(ctx, filter)
-	if err != nil {
-		return nil, err
-	}
-	var result []models.Invoice
-	if err := cursor.All(ctx, &result); err != nil {
-		return nil, err
-	}
-	return result, nil
+	invoices, _, err := r.ListByCodeAndDatePaginated(ctx, code, time.Time{}, time.Time{}, 1, 0, deleted)
+	return invoices, err
 }
 
-// ListByCodeAndDatePaginated lọc theo mã + ngày + phân trang
+// ListByCodeAndDatePaginated lọc theo mã và khoảng ngày. Cả mã và ngày đều có thể bỏ trống.
+// Nếu limit = 0 sẽ trả về toàn bộ kết quả.
 func (r *InvoiceRepository) ListByCodeAndDatePaginated(ctx context.Context, code string, from, to time.Time, page, limit int64, deleted bool) ([]models.Invoice, int64, error) {
 	delFilter := bson.M{"$exists": !deleted}
 	if deleted {
 		delFilter = bson.M{"$exists": true}
 	}
-	filter := bson.M{
-		"deletedAt": delFilter,
-		"code":      bson.M{"$regex": primitive.Regex{Pattern: code, Options: "i"}},
-		"createdAt": bson.M{
-			"$gte": from,
-			"$lte": to,
-		},
+
+	filter := bson.M{"deletedAt": delFilter}
+	if code != "" {
+		filter["code"] = bson.M{"$regex": primitive.Regex{Pattern: code, Options: "i"}}
 	}
+	if !from.IsZero() || !to.IsZero() {
+		dateFilter := bson.M{}
+		if !from.IsZero() {
+			dateFilter["$gte"] = from
+		}
+		if !to.IsZero() {
+			dateFilter["$lte"] = to
+		}
+		filter["createdAt"] = dateFilter
+	}
+
 	opts := options.Find().SetSort(bson.M{"createdAt": -1})
 	if limit > 0 {
 		opts.SetSkip((page - 1) * limit)
