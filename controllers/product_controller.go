@@ -1,10 +1,11 @@
 package controllers
 
 import (
-	"github.com/gofiber/fiber/v2"
-	"go-fiber-api/models"
-	"go-fiber-api/repositories"
-	"strings"
+        "github.com/gofiber/fiber/v2"
+        "go-fiber-api/models"
+        "go-fiber-api/repositories"
+        "go.mongodb.org/mongo-driver/bson/primitive"
+        "strings"
 )
 
 // ProductController là controller xử lý các API liên quan đến sản phẩm
@@ -56,8 +57,14 @@ func (ctrl *ProductController) Update(c *fiber.Ctx) error {
 // Delete xoá một hoặc nhiều sản phẩm
 // Method: DELETE /api/products?id=abc123,def456
 func (ctrl *ProductController) Delete(c *fiber.Ctx) error {
-	ids := strings.Split(c.Query("id"), ",")
-	err := ctrl.repo.DeleteMany(c.Context(), ids)
+       idStrs := strings.Split(c.Query("id"), ",")
+       var ids []primitive.ObjectID
+       for _, s := range idStrs {
+               if oid, err := primitive.ObjectIDFromHex(s); err == nil {
+                       ids = append(ids, oid)
+               }
+       }
+       err := ctrl.repo.DeleteMany(c.Context(), ids)
 	if err != nil {
 		return c.Status(500).JSON(models.APIResponse{Status: "error", Message: "Delete failed", Data: nil})
 	}

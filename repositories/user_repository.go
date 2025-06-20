@@ -105,20 +105,14 @@ func UpdateUser(id string, user models.User) error {
 }
 
 // DeleteUsers xoá nhiều user theo danh sách ID
-func DeleteUsers(ids []string) error {
-	var objIDs []primitive.ObjectID
-	for _, id := range ids {
-		if objID, err := primitive.ObjectIDFromHex(id); err == nil {
-			objIDs = append(objIDs, objID)
-		}
-	}
-	if len(objIDs) == 0 {
-		return nil
-	}
-	filter := bson.M{"_id": bson.M{"$in": objIDs}}
-	update := bson.M{"$set": bson.M{"deletedAt": time.Now()}}
-	_, err := config.DB.Collection("users").UpdateMany(context.TODO(), filter, update)
-	return err
+func DeleteUsers(ids []primitive.ObjectID) error {
+    if len(ids) == 0 {
+            return nil
+    }
+    filter := bson.M{"_id": bson.M{"$in": ids}}
+    update := bson.M{"$set": bson.M{"deletedAt": time.Now()}}
+    _, err := config.DB.Collection("users").UpdateMany(context.TODO(), filter, update)
+    return err
 }
 
 // Lấy user theo ID

@@ -54,21 +54,14 @@ func (r *ProductRepository) Update(ctx context.Context, id string, product model
 	return nil
 }
 
-func (r *ProductRepository) DeleteMany(ctx context.Context, ids []string) error {
-	var objIDs []primitive.ObjectID
-	for _, id := range ids {
-		objID, err := primitive.ObjectIDFromHex(id)
-		if err == nil {
-			objIDs = append(objIDs, objID)
-		}
-	}
-	if len(objIDs) == 0 {
-		return nil
-	}
-	filter := bson.M{"_id": bson.M{"$in": objIDs}}
-	update := bson.M{"$set": bson.M{"deletedAt": time.Now()}}
-	_, err := r.collection.UpdateMany(ctx, filter, update)
-	return err
+func (r *ProductRepository) DeleteMany(ctx context.Context, ids []primitive.ObjectID) error {
+    if len(ids) == 0 {
+            return nil
+    }
+    filter := bson.M{"_id": bson.M{"$in": ids}}
+    update := bson.M{"$set": bson.M{"deletedAt": time.Now()}}
+    _, err := r.collection.UpdateMany(ctx, filter, update)
+    return err
 }
 
 func (r *ProductRepository) List(ctx context.Context, page, limit int64, search string) ([]models.Product, int64, error) {
