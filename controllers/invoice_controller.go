@@ -61,6 +61,10 @@ func (ctrl *InvoiceController) Create(c *fiber.Ctx) error {
 		})
 	}
 
+	if createdInvoice.CreatedBy != nil {
+		createdInvoice.CreatedBy.Password = ""
+	}
+
 	return c.Status(201).JSON(models.APIResponse{
 		Status:  "success",
 		Message: "Invoice created",
@@ -102,6 +106,8 @@ func (ctrl *InvoiceController) FilterByDate(c *fiber.Ctx) error {
 	fromStr := c.Query("from")
 	toStr := c.Query("to")
 	code := c.Query("code")
+	deleted := c.QueryBool("deleted", false)
+	shift := c.Query("shift")
 	limitStr := c.Query("limit")
 
 	page := c.QueryInt("page", 1)
@@ -123,7 +129,15 @@ func (ctrl *InvoiceController) FilterByDate(c *fiber.Ctx) error {
 		if err1 != nil || err2 != nil {
 			return c.Status(400).JSON(models.APIResponse{Status: "error", Message: "Invalid date format (dd/mm/yyyy)", Data: nil})
 		}
-		toTime = toTime.Add(23*time.Hour + 59*time.Minute + 59*time.Second)
+		if shift == "morning" {
+			fromTime = time.Date(fromTime.Year(), fromTime.Month(), fromTime.Day(), 7, 0, 0, 0, fromTime.Location())
+			toTime = time.Date(toTime.Year(), toTime.Month(), toTime.Day(), 13, 30, 0, 0, toTime.Location())
+		} else if shift == "afternoon" {
+			fromTime = time.Date(fromTime.Year(), fromTime.Month(), fromTime.Day(), 13, 30, 0, 0, fromTime.Location())
+			toTime = time.Date(toTime.Year(), toTime.Month(), toTime.Day(), 21, 0, 0, 0, toTime.Location())
+		} else {
+			toTime = toTime.Add(23*time.Hour + 59*time.Minute + 59*time.Second)
+		}
 	}
 
 	var (
@@ -134,18 +148,27 @@ func (ctrl *InvoiceController) FilterByDate(c *fiber.Ctx) error {
 
 	switch {
 	case filterByDate && filterByCode:
-		invoices, total, err = ctrl.repo.ListByCodeAndDatePaginated(c.Context(), code, fromTime, toTime, int64(page), int64(limit))
+		invoices, total, err = ctrl.repo.ListByCodeAndDatePaginated(c.Context(), code, fromTime, toTime, int64(page), int64(limit), deleted)
 	case filterByDate:
-		invoices, total, err = ctrl.repo.ListByDateRangePaginated(c.Context(), fromTime, toTime, int64(page), int64(limit))
+		invoices, total, err = ctrl.repo.ListByDateRangePaginated(c.Context(), fromTime, toTime, int64(page), int64(limit), deleted)
 	case filterByCode:
-		invoices, err = ctrl.repo.ListByCode(c.Context(), code)
+		invoices, err = ctrl.repo.ListByCode(c.Context(), code, deleted)
 		total = int64(len(invoices))
 	default:
-		invoices, total, err = ctrl.repo.ListPaginated(c.Context(), int64(page), int64(limit))
+		invoices, total, err = ctrl.repo.ListPaginated(c.Context(), int64(page), int64(limit), deleted)
 	}
 
 	if err != nil {
 		return c.Status(500).JSON(models.APIResponse{Status: "error", Message: "List failed", Data: nil})
+	}
+
+	for i := range invoices {
+		if invoices[i].CreatedBy != nil {
+			invoices[i].CreatedBy.Password = ""
+		}
+		if invoices[i].DeletedBy != nil {
+			invoices[i].DeletedBy.Password = ""
+		}
 	}
 
 	// Thống kê sản phẩm trên kết quả trả về
@@ -254,9 +277,17 @@ func (ctrl *InvoiceController) Import(c *fiber.Ctx) error {
 // Export trả về danh sách hóa đơn dạng JSON có thể nhập lại
 // Method: GET /api/invoices/export
 func (ctrl *InvoiceController) Export(c *fiber.Ctx) error {
-	invoices, _, err := ctrl.repo.ListPaginated(c.Context(), 1, 0)
+	invoices, _, err := ctrl.repo.ListPaginated(c.Context(), 1, 0, false)
 	if err != nil {
 		return c.Status(500).JSON(models.APIResponse{Status: "error", Message: "Export failed", Data: nil})
+	}
+	for i := range invoices {
+		if invoices[i].CreatedBy != nil {
+			invoices[i].CreatedBy.Password = ""
+		}
+		if invoices[i].DeletedBy != nil {
+			invoices[i].DeletedBy.Password = ""
+		}
 	}
 	c.Attachment("invoices.json")
 	return c.JSON(invoices)
