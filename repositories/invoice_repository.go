@@ -72,14 +72,14 @@ func (r *InvoiceRepository) Create(ctx context.Context, invoice models.Invoice) 
 }
 
 // DeleteMany xoá nhiều hóa đơn theo ID
-func (r *InvoiceRepository) DeleteMany(ctx context.Context, ids []primitive.ObjectID, deletedBy primitive.ObjectID) error {
-    if len(ids) == 0 {
-            return nil
-    }
-    filter := bson.M{"_id": bson.M{"$in": ids}}
-    update := bson.M{"$set": bson.M{"deletedAt": time.Now(), "deletedBy": deletedBy}}
-    _, err := r.collection.UpdateMany(ctx, filter, update)
-    return err
+func (r *InvoiceRepository) DeleteMany(ctx context.Context, ids []primitive.ObjectID, deletedBy *models.User) error {
+	if len(ids) == 0 {
+		return nil
+	}
+	filter := bson.M{"_id": bson.M{"$in": ids}}
+	update := bson.M{"$set": bson.M{"deletedAt": time.Now(), "deletedBy": deletedBy}}
+	_, err := r.collection.UpdateMany(ctx, filter, update)
+	return err
 }
 
 // ListByDateRange lọc hóa đơn theo khoảng ngày

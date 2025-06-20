@@ -13,14 +13,14 @@ import (
 //		Note      string             `json:"note" bson:"note,omitempty"`
 //	}
 type Invoice struct {
-	ID        primitive.ObjectID  `json:"id" bson:"_id,omitempty"`
-	Code      string              `json:"code" bson:"code"`           // Mã hóa đơn: HDXXXXXX
-	CreatedAt time.Time           `json:"createdAt" bson:"createdAt"` // Giờ GMT+7
-	CreatedBy primitive.ObjectID  `json:"createdBy" bson:"createdBy"`
-	Items     []InvoiceItem       `json:"items" bson:"items"`
-	Note      string              `json:"note" bson:"note,omitempty"`
-	DeletedAt *time.Time          `json:"deletedAt,omitempty" bson:"deletedAt,omitempty"`
-	DeletedBy *primitive.ObjectID `json:"deletedBy,omitempty" bson:"deletedBy,omitempty"`
+	ID        primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	Code      string             `json:"code" bson:"code"`           // Mã hóa đơn: HDXXXXXX
+	CreatedAt time.Time          `json:"createdAt" bson:"createdAt"` // Giờ GMT+7
+	CreatedBy *User              `json:"createdBy" bson:"createdBy"`
+	Items     []InvoiceItem      `json:"items" bson:"items"`
+	Note      string             `json:"note" bson:"note,omitempty"`
+	DeletedAt *time.Time         `json:"deletedAt,omitempty" bson:"deletedAt,omitempty"`
+	DeletedBy *User              `json:"deletedBy,omitempty" bson:"deletedBy,omitempty"`
 }
 
 type InvoiceItem struct {

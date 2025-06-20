@@ -45,8 +45,8 @@ func (ctrl *InvoiceController) Create(c *fiber.Ctx) error {
 	if userToken != nil {
 		if claims, ok := userToken.Claims.(jwt.MapClaims); ok {
 			if idStr, ok := claims["id"].(string); ok {
-				if oid, err := primitive.ObjectIDFromHex(idStr); err == nil {
-					invoice.CreatedBy = oid
+				if user, err := repositories.FindUserByID(idStr); err == nil {
+					invoice.CreatedBy = user
 				}
 			}
 		}
@@ -79,17 +79,17 @@ func (ctrl *InvoiceController) Delete(c *fiber.Ctx) error {
 			ids = append(ids, oid)
 		}
 	}
-	var userID primitive.ObjectID
+	var userInfo *models.User
 	if token, _ := c.Locals("user").(*jwt.Token); token != nil {
 		if claims, ok := token.Claims.(jwt.MapClaims); ok {
 			if idStr, ok := claims["id"].(string); ok {
-				if oid, err := primitive.ObjectIDFromHex(idStr); err == nil {
-					userID = oid
+				if u, err := repositories.FindUserByID(idStr); err == nil {
+					userInfo = u
 				}
 			}
 		}
 	}
-	if err := ctrl.repo.DeleteMany(c.Context(), ids, userID); err != nil {
+	if err := ctrl.repo.DeleteMany(c.Context(), ids, userInfo); err != nil {
 		return c.Status(500).JSON(models.APIResponse{Status: "error", Message: "Delete failed", Data: nil})
 	}
 	return c.JSON(models.APIResponse{Status: "success", Message: "Invoices deleted", Data: nil})
@@ -232,18 +232,18 @@ func (ctrl *InvoiceController) Import(c *fiber.Ctx) error {
 	if err := c.BodyParser(&invoices); err != nil {
 		return c.Status(400).JSON(models.APIResponse{Status: "error", Message: "Invalid input", Data: nil})
 	}
-	var userID primitive.ObjectID
+	var userInfo *models.User
 	if token, _ := c.Locals("user").(*jwt.Token); token != nil {
 		if claims, ok := token.Claims.(jwt.MapClaims); ok {
 			if idStr, ok := claims["id"].(string); ok {
-				if oid, err := primitive.ObjectIDFromHex(idStr); err == nil {
-					userID = oid
+				if u, err := repositories.FindUserByID(idStr); err == nil {
+					userInfo = u
 				}
 			}
 		}
 	}
 	for _, inv := range invoices {
-		inv.CreatedBy = userID
+		inv.CreatedBy = userInfo
 		if _, err := ctrl.repo.Create(c.Context(), inv); err != nil {
 			return c.Status(500).JSON(models.APIResponse{Status: "error", Message: "Import failed", Data: nil})
 		}
