@@ -4,8 +4,10 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
+	jwt "github.com/golang-jwt/jwt/v4"
 	"go-fiber-api/models"
 	"go-fiber-api/repositories"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"strings"
 )
 
@@ -39,6 +41,17 @@ func (ctrl *InvoiceController) Create(c *fiber.Ctx) error {
 		})
 	}
 
+	userToken, _ := c.Locals("user").(*jwt.Token)
+	if userToken != nil {
+		if claims, ok := userToken.Claims.(jwt.MapClaims); ok {
+			if idStr, ok := claims["id"].(string); ok {
+				if user, err := repositories.FindUserByID(idStr); err == nil {
+					invoice.CreatedBy = user
+				}
+			}
+		}
+	}
+
 	createdInvoice, err := ctrl.repo.Create(c.Context(), invoice)
 	if err != nil {
 		return c.Status(500).JSON(models.APIResponse{
@@ -59,8 +72,24 @@ func (ctrl *InvoiceController) Create(c *fiber.Ctx) error {
 //
 // @route  DELETE /api/invoices?id=66a1...,66a2...
 func (ctrl *InvoiceController) Delete(c *fiber.Ctx) error {
-	ids := strings.Split(c.Query("id"), ",")
-	if err := ctrl.repo.DeleteMany(c.Context(), ids); err != nil {
+	idStrs := strings.Split(c.Query("id"), ",")
+	var ids []primitive.ObjectID
+	for _, s := range idStrs {
+		if oid, err := primitive.ObjectIDFromHex(s); err == nil {
+			ids = append(ids, oid)
+		}
+	}
+	var userInfo *models.User
+	if token, _ := c.Locals("user").(*jwt.Token); token != nil {
+		if claims, ok := token.Claims.(jwt.MapClaims); ok {
+			if idStr, ok := claims["id"].(string); ok {
+				if u, err := repositories.FindUserByID(idStr); err == nil {
+					userInfo = u
+				}
+			}
+		}
+	}
+	if err := ctrl.repo.DeleteMany(c.Context(), ids, userInfo); err != nil {
 		return c.Status(500).JSON(models.APIResponse{Status: "error", Message: "Delete failed", Data: nil})
 	}
 	return c.JSON(models.APIResponse{Status: "success", Message: "Invoices deleted", Data: nil})
@@ -203,7 +232,18 @@ func (ctrl *InvoiceController) Import(c *fiber.Ctx) error {
 	if err := c.BodyParser(&invoices); err != nil {
 		return c.Status(400).JSON(models.APIResponse{Status: "error", Message: "Invalid input", Data: nil})
 	}
+	var userInfo *models.User
+	if token, _ := c.Locals("user").(*jwt.Token); token != nil {
+		if claims, ok := token.Claims.(jwt.MapClaims); ok {
+			if idStr, ok := claims["id"].(string); ok {
+				if u, err := repositories.FindUserByID(idStr); err == nil {
+					userInfo = u
+				}
+			}
+		}
+	}
 	for _, inv := range invoices {
+		inv.CreatedBy = userInfo
 		if _, err := ctrl.repo.Create(c.Context(), inv); err != nil {
 			return c.Status(500).JSON(models.APIResponse{Status: "error", Message: "Import failed", Data: nil})
 		}
