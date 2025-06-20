@@ -8,6 +8,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"time"
 )
 
 type ProductRepository struct {
@@ -61,13 +62,17 @@ func (r *ProductRepository) DeleteMany(ctx context.Context, ids []string) error 
 			objIDs = append(objIDs, objID)
 		}
 	}
+	if len(objIDs) == 0 {
+		return nil
+	}
 	filter := bson.M{"_id": bson.M{"$in": objIDs}}
-	_, err := r.collection.DeleteMany(ctx, filter)
+	update := bson.M{"$set": bson.M{"deletedAt": time.Now()}}
+	_, err := r.collection.UpdateMany(ctx, filter, update)
 	return err
 }
 
 func (r *ProductRepository) List(ctx context.Context, page, limit int64, search string) ([]models.Product, int64, error) {
-	filter := bson.M{}
+	filter := bson.M{"deletedAt": bson.M{"$exists": false}}
 	if search != "" {
 		filter["name"] = bson.M{"$regex": primitive.Regex{Pattern: search, Options: "i"}}
 	}

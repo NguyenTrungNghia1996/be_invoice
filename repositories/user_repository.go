@@ -9,12 +9,17 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"time"
 )
 
 // Tìm user theo username
 func FindUserByUsername(username string) (*models.User, error) {
 	var user models.User
-	err := config.DB.Collection("users").FindOne(context.TODO(), bson.M{"username": username}).Decode(&user)
+	filter := bson.M{
+		"username":  username,
+		"deletedAt": bson.M{"$exists": false},
+	}
+	err := config.DB.Collection("users").FindOne(context.TODO(), filter).Decode(&user)
 	if err != nil {
 		return nil, err
 	}
@@ -30,7 +35,11 @@ func CreateUser(user *models.User) error {
 
 // Kiểm tra Username already exists
 func IsUsernameExists(username string) (bool, error) {
-	count, err := config.DB.Collection("users").CountDocuments(context.TODO(), bson.M{"username": username})
+	filter := bson.M{
+		"username":  username,
+		"deletedAt": bson.M{"$exists": false},
+	}
+	count, err := config.DB.Collection("users").CountDocuments(context.TODO(), filter)
 	if err != nil {
 		return false, err
 	}
@@ -39,7 +48,7 @@ func IsUsernameExists(username string) (bool, error) {
 
 // Lấy danh sách user theo role (nếu có)
 func GetUsersByRole(role string) ([]models.User, error) {
-	filter := bson.M{}
+	filter := bson.M{"deletedAt": bson.M{"$exists": false}}
 	if role != "" {
 		filter["role"] = role
 	}
@@ -74,7 +83,7 @@ func UpdateUserPassword(id string, hashedPassword string) error {
 	if err != nil {
 		return err
 	}
-	filter := bson.M{"_id": objID}
+	filter := bson.M{"_id": objID, "deletedAt": bson.M{"$exists": false}}
 	update := bson.M{"$set": bson.M{"password": hashedPassword}}
 	_, err = config.DB.Collection("users").UpdateOne(context.TODO(), filter, update)
 	return err
@@ -86,7 +95,7 @@ func UpdateUser(id string, user models.User) error {
 	if err != nil {
 		return err
 	}
-	filter := bson.M{"_id": objID}
+	filter := bson.M{"_id": objID, "deletedAt": bson.M{"$exists": false}}
 	update := bson.M{"$set": bson.M{
 		"username": user.Username,
 		"role":     user.Role,
@@ -103,8 +112,12 @@ func DeleteUsers(ids []string) error {
 			objIDs = append(objIDs, objID)
 		}
 	}
+	if len(objIDs) == 0 {
+		return nil
+	}
 	filter := bson.M{"_id": bson.M{"$in": objIDs}}
-	_, err := config.DB.Collection("users").DeleteMany(context.TODO(), filter)
+	update := bson.M{"$set": bson.M{"deletedAt": time.Now()}}
+	_, err := config.DB.Collection("users").UpdateMany(context.TODO(), filter, update)
 	return err
 }
 
@@ -118,7 +131,8 @@ func FindUserByID(id string) (*models.User, error) {
 		return nil, err
 	}
 
-	err = config.DB.Collection("users").FindOne(context.TODO(), bson.M{"_id": objID}).Decode(&user)
+	filter := bson.M{"_id": objID, "deletedAt": bson.M{"$exists": false}}
+	err = config.DB.Collection("users").FindOne(context.TODO(), filter).Decode(&user)
 	if err != nil {
 		return nil, err
 	}
