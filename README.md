@@ -110,7 +110,7 @@ Tất cả các endpoint (ngoại trừ `/login` và `/test`) đều yêu cầu 
 |`GET`|`/api/products/export`|Xuất danh sách sản phẩm (JSON)|-|
 |`POST`|`/api/invoices`|Tạo hoá đơn mới|`{"items":[{"productId":"...","name":"Áo","quantity":1,"price":10000}]}`|
 |`DELETE`|`/api/invoices?id=a,b`|Xoá hoá đơn|-|
-|`GET`|`/api/invoices`|Lọc hoá đơn theo ngày, mã, ca và trạng thái xoá|-|
+|`GET`|`/api/invoices`|Lọc hoá đơn theo ngày, mã và ca|-|
 |`PUT`|`/api/invoices`|Cập nhật hoá đơn|`{"id":"...","items":[]}`|
 |`POST`|`/api/invoices/import`|Nhập hoá đơn (JSON)|`[{"items":[]}]`|
 |`GET`|`/api/invoices/export`|Xuất hoá đơn (JSON)|-|
@@ -120,13 +120,12 @@ Tất cả các endpoint (ngoại trừ `/login` và `/test`) đều yêu cầu 
 Ví dụ:
 
 ```
-GET /api/invoices?from=01/05/2025&to=02/05/2025&page=1&limit=10&deleted=false&shift=morning
+GET /api/invoices?from=01/05/2025&to=02/05/2025&page=1&limit=10&shift=morning
 ```
 
 - `from`, `to`: định dạng `dd/mm/yyyy`
 - `page`, `limit`: phân trang
 - `code`: mã hoá đơn (tuỳ chọn)
-- `deleted`: `true` để hiển thị đơn đã xoá (mặc định `false`)
 - `shift`: `morning` (7h‑13h30) hoặc `afternoon` (13h30‑21h)
 - Kết quả bao gồm thông tin người tạo và người xoá (nếu có), không chứa mật khẩu
 

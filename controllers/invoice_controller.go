@@ -106,8 +106,7 @@ func (ctrl *InvoiceController) FilterByDate(c *fiber.Ctx) error {
 	fromStr := c.Query("from")
 	toStr := c.Query("to")
 	code := c.Query("code")
-	deleted := c.QueryBool("deleted", false)
-	shift := c.Query("shift")
+       shift := c.Query("shift")
 	limitStr := c.Query("limit")
 
 	page := c.QueryInt("page", 1)
@@ -120,7 +119,6 @@ func (ctrl *InvoiceController) FilterByDate(c *fiber.Ctx) error {
 
 	var fromTime, toTime time.Time
 	filterByDate := fromStr != "" && toStr != ""
-	filterByCode := code != ""
 
 	if filterByDate {
 		var err1, err2 error
@@ -140,23 +138,7 @@ func (ctrl *InvoiceController) FilterByDate(c *fiber.Ctx) error {
 		}
 	}
 
-	var (
-		invoices []models.Invoice
-		total    int64
-		err      error
-	)
-
-	switch {
-	case filterByDate && filterByCode:
-		invoices, total, err = ctrl.repo.ListByCodeAndDatePaginated(c.Context(), code, fromTime, toTime, int64(page), int64(limit), deleted)
-	case filterByDate:
-		invoices, total, err = ctrl.repo.ListByDateRangePaginated(c.Context(), fromTime, toTime, int64(page), int64(limit), deleted)
-	case filterByCode:
-		invoices, err = ctrl.repo.ListByCode(c.Context(), code, deleted)
-		total = int64(len(invoices))
-	default:
-		invoices, total, err = ctrl.repo.ListPaginated(c.Context(), int64(page), int64(limit), deleted)
-	}
+       invoices, total, err := ctrl.repo.ListByCodeAndDatePaginated(c.Context(), code, fromTime, toTime, int64(page), int64(limit))
 
 	if err != nil {
 		return c.Status(500).JSON(models.APIResponse{Status: "error", Message: "List failed", Data: nil})
@@ -277,7 +259,7 @@ func (ctrl *InvoiceController) Import(c *fiber.Ctx) error {
 // Export trả về danh sách hóa đơn dạng JSON có thể nhập lại
 // Method: GET /api/invoices/export
 func (ctrl *InvoiceController) Export(c *fiber.Ctx) error {
-	invoices, _, err := ctrl.repo.ListPaginated(c.Context(), 1, 0, false)
+       invoices, _, err := ctrl.repo.ListByCodeAndDatePaginated(c.Context(), "", time.Time{}, time.Time{}, 1, 0)
 	if err != nil {
 		return c.Status(500).JSON(models.APIResponse{Status: "error", Message: "Export failed", Data: nil})
 	}
