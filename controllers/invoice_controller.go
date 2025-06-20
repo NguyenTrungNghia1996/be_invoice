@@ -72,23 +72,23 @@ func (ctrl *InvoiceController) Create(c *fiber.Ctx) error {
 //
 // @route  DELETE /api/invoices?id=66a1...,66a2...
 func (ctrl *InvoiceController) Delete(c *fiber.Ctx) error {
-       idStrs := strings.Split(c.Query("id"), ",")
-       var ids []primitive.ObjectID
-       for _, s := range idStrs {
-               if oid, err := primitive.ObjectIDFromHex(s); err == nil {
-                       ids = append(ids, oid)
-               }
-       }
-       var userID primitive.ObjectID
-       if token, _ := c.Locals("user").(*jwt.Token); token != nil {
-               if claims, ok := token.Claims.(jwt.MapClaims); ok {
-                       if idStr, ok := claims["id"].(string); ok {
-                               if oid, err := primitive.ObjectIDFromHex(idStr); err == nil {
-                                       userID = oid
-                               }
-                       }
-               }
-       }
+	idStrs := strings.Split(c.Query("id"), ",")
+	var ids []primitive.ObjectID
+	for _, s := range idStrs {
+		if oid, err := primitive.ObjectIDFromHex(s); err == nil {
+			ids = append(ids, oid)
+		}
+	}
+	var userID primitive.ObjectID
+	if token, _ := c.Locals("user").(*jwt.Token); token != nil {
+		if claims, ok := token.Claims.(jwt.MapClaims); ok {
+			if idStr, ok := claims["id"].(string); ok {
+				if oid, err := primitive.ObjectIDFromHex(idStr); err == nil {
+					userID = oid
+				}
+			}
+		}
+	}
 	if err := ctrl.repo.DeleteMany(c.Context(), ids, userID); err != nil {
 		return c.Status(500).JSON(models.APIResponse{Status: "error", Message: "Delete failed", Data: nil})
 	}
@@ -232,7 +232,18 @@ func (ctrl *InvoiceController) Import(c *fiber.Ctx) error {
 	if err := c.BodyParser(&invoices); err != nil {
 		return c.Status(400).JSON(models.APIResponse{Status: "error", Message: "Invalid input", Data: nil})
 	}
+	var userID primitive.ObjectID
+	if token, _ := c.Locals("user").(*jwt.Token); token != nil {
+		if claims, ok := token.Claims.(jwt.MapClaims); ok {
+			if idStr, ok := claims["id"].(string); ok {
+				if oid, err := primitive.ObjectIDFromHex(idStr); err == nil {
+					userID = oid
+				}
+			}
+		}
+	}
 	for _, inv := range invoices {
+		inv.CreatedBy = userID
 		if _, err := ctrl.repo.Create(c.Context(), inv); err != nil {
 			return c.Status(500).JSON(models.APIResponse{Status: "error", Message: "Import failed", Data: nil})
 		}
