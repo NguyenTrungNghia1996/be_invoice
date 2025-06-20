@@ -3,12 +3,13 @@ package controllers
 import (
 	"time"
 
-	"github.com/gofiber/fiber/v2"
-	jwt "github.com/golang-jwt/jwt/v4"
 	"go-fiber-api/models"
 	"go-fiber-api/repositories"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"strings"
+
+	"github.com/gofiber/fiber/v2"
+	jwt "github.com/golang-jwt/jwt/v4"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type InvoiceController struct {
@@ -129,11 +130,11 @@ func (ctrl *InvoiceController) FilterByDate(c *fiber.Ctx) error {
 			return c.Status(400).JSON(models.APIResponse{Status: "error", Message: "Invalid date format (dd/mm/yyyy)", Data: nil})
 		}
 		if shift == "morning" {
-			fromTime = time.Date(fromTime.Year(), fromTime.Month(), fromTime.Day(), 7, 0, 0, 0, fromTime.Location())
+			fromTime = time.Date(fromTime.Year(), fromTime.Month(), fromTime.Day(), 4, 0, 0, 0, fromTime.Location())
 			toTime = time.Date(toTime.Year(), toTime.Month(), toTime.Day(), 13, 30, 0, 0, toTime.Location())
 		} else if shift == "afternoon" {
 			fromTime = time.Date(fromTime.Year(), fromTime.Month(), fromTime.Day(), 13, 30, 0, 0, fromTime.Location())
-			toTime = time.Date(toTime.Year(), toTime.Month(), toTime.Day(), 21, 0, 0, 0, toTime.Location())
+			toTime = time.Date(toTime.Year(), toTime.Month(), toTime.Day(), 24, 0, 0, 0, toTime.Location())
 		} else {
 			toTime = toTime.Add(23*time.Hour + 59*time.Minute + 59*time.Second)
 		}
