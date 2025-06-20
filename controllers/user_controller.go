@@ -1,15 +1,15 @@
 package controllers
 
 import (
-        "go-fiber-api/models"
-        "go-fiber-api/repositories"
-        "go-fiber-api/utils"
+	"go-fiber-api/models"
+	"go-fiber-api/repositories"
+	"go-fiber-api/utils"
 
-        "github.com/gofiber/fiber/v2"
-        "github.com/golang-jwt/jwt"
-        "go.mongodb.org/mongo-driver/bson/primitive"
-        "os"
-        "strings"
+	"github.com/gofiber/fiber/v2"
+	jwt "github.com/golang-jwt/jwt/v4"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"os"
+	"strings"
 )
 
 // CreateUser handles the creation of a new user
@@ -239,17 +239,17 @@ func UpdateUser(c *fiber.Ctx) error {
 //
 // @route DELETE /api/users?id=abc,def
 func DeleteUsers(c *fiber.Ctx) error {
-       idStrs := strings.Split(c.Query("id"), ",")
-       var ids []primitive.ObjectID
-       for _, s := range idStrs {
-               if oid, err := primitive.ObjectIDFromHex(s); err == nil {
-                       ids = append(ids, oid)
-               }
-       }
-       if len(ids) == 0 {
-               return c.Status(fiber.StatusBadRequest).JSON(models.APIResponse{Status: "error", Message: "Missing id", Data: nil})
-       }
-       if err := repositories.DeleteUsers(ids); err != nil {
+	idStrs := strings.Split(c.Query("id"), ",")
+	var ids []primitive.ObjectID
+	for _, s := range idStrs {
+		if oid, err := primitive.ObjectIDFromHex(s); err == nil {
+			ids = append(ids, oid)
+		}
+	}
+	if len(ids) == 0 {
+		return c.Status(fiber.StatusBadRequest).JSON(models.APIResponse{Status: "error", Message: "Missing id", Data: nil})
+	}
+	if err := repositories.DeleteUsers(ids); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(models.APIResponse{Status: "error", Message: "Delete failed", Data: nil})
 	}
 	return c.JSON(models.APIResponse{Status: "success", Message: "Deleted successfully", Data: nil})

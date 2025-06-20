@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/golang-jwt/jwt"
+	jwt "github.com/golang-jwt/jwt/v4"
 	"go-fiber-api/models"
 	"go-fiber-api/repositories"
 	"go.mongodb.org/mongo-driver/bson/primitive"
