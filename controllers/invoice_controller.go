@@ -130,10 +130,10 @@ func (ctrl *InvoiceController) FilterByDate(c *fiber.Ctx) error {
 			return c.Status(400).JSON(models.APIResponse{Status: "error", Message: "Invalid date format (dd/mm/yyyy)", Data: nil})
 		}
 		if shift == "morning" {
-			fromTime = time.Date(fromTime.Year(), fromTime.Month(), fromTime.Day(), 4, 0, 0, 0, fromTime.Location())
-			toTime = time.Date(toTime.Year(), toTime.Month(), toTime.Day(), 13, 30, 0, 0, toTime.Location())
+			fromTime = time.Date(fromTime.Year(), fromTime.Month(), fromTime.Day(), 1, 0, 0, 0, fromTime.Location())
+			toTime = time.Date(toTime.Year(), toTime.Month(), toTime.Day(), 14, 00, 0, 0, toTime.Location())
 		} else if shift == "afternoon" {
-			fromTime = time.Date(fromTime.Year(), fromTime.Month(), fromTime.Day(), 13, 30, 0, 0, fromTime.Location())
+			fromTime = time.Date(fromTime.Year(), fromTime.Month(), fromTime.Day(), 14, 00, 0, 0, fromTime.Location())
 			toTime = time.Date(toTime.Year(), toTime.Month(), toTime.Day(), 24, 0, 0, 0, toTime.Location())
 		} else {
 			toTime = toTime.Add(23*time.Hour + 59*time.Minute + 59*time.Second)
