@@ -82,36 +82,6 @@ func (r *InvoiceRepository) DeleteMany(ctx context.Context, ids []primitive.Obje
 	return err
 }
 
-// ListByDateRange lọc hóa đơn theo khoảng ngày
-func (r *InvoiceRepository) ListByDateRange(ctx context.Context, from, to time.Time) ([]models.Invoice, error) {
-       filter := bson.M{
-               "deletedAt": bson.M{"$exists": false},
-               "createdAt": bson.M{
-                       "$gte": from,
-                       "$lte": to,
-               },
-       }
-       cursor, err := r.collection.Find(ctx, filter)
-       if err != nil {
-               return nil, err
-       }
-	var result []models.Invoice
-	if err = cursor.All(ctx, &result); err != nil {
-		return nil, err
-	}
-	return result, nil
-}
-
-// ListByDateRangePaginated lọc hóa đơn theo khoảng ngày + phân trang
-func (r *InvoiceRepository) ListByDateRangePaginated(ctx context.Context, from, to time.Time, page, limit int64) ([]models.Invoice, int64, error) {
-       return r.ListByCodeAndDatePaginated(ctx, "", from, to, page, limit)
-}
-
-// ListPaginated phân trang danh sách hóa đơn
-func (r *InvoiceRepository) ListPaginated(ctx context.Context, page, limit int64) ([]models.Invoice, int64, error) {
-       return r.ListByCodeAndDatePaginated(ctx, "", time.Time{}, time.Time{}, page, limit)
-}
-
 // Update cập nhật hóa đơn (sản phẩm, ghi chú)
 func (r *InvoiceRepository) Update(ctx context.Context, id string, invoice models.Invoice) error {
 	objID, err := primitive.ObjectIDFromHex(id)
@@ -129,19 +99,13 @@ func (r *InvoiceRepository) Update(ctx context.Context, id string, invoice model
 	return err
 }
 
-// ListByCode lọc hóa đơn theo mã code (tìm gần đúng)
-func (r *InvoiceRepository) ListByCode(ctx context.Context, code string) ([]models.Invoice, error) {
-       invoices, _, err := r.ListByCodeAndDatePaginated(ctx, code, time.Time{}, time.Time{}, 1, 0)
-       return invoices, err
-}
-
 // ListByCodeAndDatePaginated lọc theo mã và khoảng ngày. Cả mã và ngày đều có thể bỏ trống.
 // Nếu limit = 0 sẽ trả về toàn bộ kết quả.
 func (r *InvoiceRepository) ListByCodeAndDatePaginated(ctx context.Context, code string, from, to time.Time, page, limit int64) ([]models.Invoice, int64, error) {
-       filter := bson.M{"deletedAt": bson.M{"$exists": false}}
-       if code != "" {
-               filter["code"] = bson.M{"$regex": primitive.Regex{Pattern: code, Options: "i"}}
-       }
+	filter := bson.M{"deletedAt": bson.M{"$exists": false}}
+	if code != "" {
+		filter["code"] = bson.M{"$regex": primitive.Regex{Pattern: code, Options: "i"}}
+	}
 	if !from.IsZero() || !to.IsZero() {
 		dateFilter := bson.M{}
 		if !from.IsZero() {
