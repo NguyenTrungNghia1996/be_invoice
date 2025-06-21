@@ -3,10 +3,13 @@ package controllers
 import (
 	"time"
 
-	"github.com/gofiber/fiber/v2"
 	"go-fiber-api/models"
 	"go-fiber-api/repositories"
 	"strings"
+
+	"github.com/gofiber/fiber/v2"
+	jwt "github.com/golang-jwt/jwt/v4"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type InvoiceController struct {
@@ -39,6 +42,17 @@ func (ctrl *InvoiceController) Create(c *fiber.Ctx) error {
 		})
 	}
 
+	userToken, _ := c.Locals("user").(*jwt.Token)
+	if userToken != nil {
+		if claims, ok := userToken.Claims.(jwt.MapClaims); ok {
+			if idStr, ok := claims["id"].(string); ok {
+				if user, err := repositories.FindUserByID(idStr); err == nil {
+					invoice.CreatedBy = user
+				}
+			}
+		}
+	}
+
 	createdInvoice, err := ctrl.repo.Create(c.Context(), invoice)
 	if err != nil {
 		return c.Status(500).JSON(models.APIResponse{
@@ -46,6 +60,10 @@ func (ctrl *InvoiceController) Create(c *fiber.Ctx) error {
 			Message: "Create failed",
 			Data:    nil,
 		})
+	}
+
+	if createdInvoice.CreatedBy != nil {
+		createdInvoice.CreatedBy.Password = ""
 	}
 
 	return c.Status(201).JSON(models.APIResponse{
@@ -59,8 +77,24 @@ func (ctrl *InvoiceController) Create(c *fiber.Ctx) error {
 //
 // @route  DELETE /api/invoices?id=66a1...,66a2...
 func (ctrl *InvoiceController) Delete(c *fiber.Ctx) error {
-	ids := strings.Split(c.Query("id"), ",")
-	if err := ctrl.repo.DeleteMany(c.Context(), ids); err != nil {
+	idStrs := strings.Split(c.Query("id"), ",")
+	var ids []primitive.ObjectID
+	for _, s := range idStrs {
+		if oid, err := primitive.ObjectIDFromHex(s); err == nil {
+			ids = append(ids, oid)
+		}
+	}
+	var userInfo *models.User
+	if token, _ := c.Locals("user").(*jwt.Token); token != nil {
+		if claims, ok := token.Claims.(jwt.MapClaims); ok {
+			if idStr, ok := claims["id"].(string); ok {
+				if u, err := repositories.FindUserByID(idStr); err == nil {
+					userInfo = u
+				}
+			}
+		}
+	}
+	if err := ctrl.repo.DeleteMany(c.Context(), ids, userInfo); err != nil {
 		return c.Status(500).JSON(models.APIResponse{Status: "error", Message: "Delete failed", Data: nil})
 	}
 	return c.JSON(models.APIResponse{Status: "success", Message: "Invoices deleted", Data: nil})
@@ -68,11 +102,13 @@ func (ctrl *InvoiceController) Delete(c *fiber.Ctx) error {
 
 // FilterByDate lọc hóa đơn theo khoảng ngày (tùy chọn), mã code (tùy chọn), phân trang + thống kê
 //
-// @route  GET /api/invoices/filter?from=01/05/2025&to=31/05/2025&page=1&limit=10&code=HD20250610
+// @route  GET /api/invoices/filter?from=01/05/2025&to=31/05/2025&page=1&limit=10&code=HD20250610&deleted=false
 func (ctrl *InvoiceController) FilterByDate(c *fiber.Ctx) error {
 	fromStr := c.Query("from")
 	toStr := c.Query("to")
 	code := c.Query("code")
+	shift := c.Query("shift")
+	deletedStr := c.Query("deleted")
 	limitStr := c.Query("limit")
 
 	page := c.QueryInt("page", 1)
@@ -85,7 +121,6 @@ func (ctrl *InvoiceController) FilterByDate(c *fiber.Ctx) error {
 
 	var fromTime, toTime time.Time
 	filterByDate := fromStr != "" && toStr != ""
-	filterByCode := code != ""
 
 	if filterByDate {
 		var err1, err2 error
@@ -94,29 +129,36 @@ func (ctrl *InvoiceController) FilterByDate(c *fiber.Ctx) error {
 		if err1 != nil || err2 != nil {
 			return c.Status(400).JSON(models.APIResponse{Status: "error", Message: "Invalid date format (dd/mm/yyyy)", Data: nil})
 		}
-		toTime = toTime.Add(23*time.Hour + 59*time.Minute + 59*time.Second)
+		if shift == "morning" {
+			fromTime = time.Date(fromTime.Year(), fromTime.Month(), fromTime.Day(), 1, 0, 0, 0, fromTime.Location())
+			toTime = time.Date(toTime.Year(), toTime.Month(), toTime.Day(), 14, 00, 0, 0, toTime.Location())
+		} else if shift == "afternoon" {
+			fromTime = time.Date(fromTime.Year(), fromTime.Month(), fromTime.Day(), 14, 00, 0, 0, fromTime.Location())
+			toTime = time.Date(toTime.Year(), toTime.Month(), toTime.Day(), 24, 0, 0, 0, toTime.Location())
+		} else {
+			toTime = toTime.Add(23*time.Hour + 59*time.Minute + 59*time.Second)
+		}
 	}
 
-	var (
-		invoices []models.Invoice
-		total    int64
-		err      error
-	)
-
-	switch {
-	case filterByDate && filterByCode:
-		invoices, total, err = ctrl.repo.ListByCodeAndDatePaginated(c.Context(), code, fromTime, toTime, int64(page), int64(limit))
-	case filterByDate:
-		invoices, total, err = ctrl.repo.ListByDateRangePaginated(c.Context(), fromTime, toTime, int64(page), int64(limit))
-	case filterByCode:
-		invoices, err = ctrl.repo.ListByCode(c.Context(), code)
-		total = int64(len(invoices))
-	default:
-		invoices, total, err = ctrl.repo.ListPaginated(c.Context(), int64(page), int64(limit))
+	var deletedPtr *bool
+	if deletedStr != "" {
+		val := strings.ToLower(deletedStr) == "true"
+		deletedPtr = &val
 	}
+
+	invoices, total, err := ctrl.repo.ListByCodeAndDatePaginated(c.Context(), code, fromTime, toTime, int64(page), int64(limit), deletedPtr)
 
 	if err != nil {
 		return c.Status(500).JSON(models.APIResponse{Status: "error", Message: "List failed", Data: nil})
+	}
+
+	for i := range invoices {
+		if invoices[i].CreatedBy != nil {
+			invoices[i].CreatedBy.Password = ""
+		}
+		if invoices[i].DeletedBy != nil {
+			invoices[i].DeletedBy.Password = ""
+		}
 	}
 
 	// Thống kê sản phẩm trên kết quả trả về
@@ -203,7 +245,18 @@ func (ctrl *InvoiceController) Import(c *fiber.Ctx) error {
 	if err := c.BodyParser(&invoices); err != nil {
 		return c.Status(400).JSON(models.APIResponse{Status: "error", Message: "Invalid input", Data: nil})
 	}
+	var userInfo *models.User
+	if token, _ := c.Locals("user").(*jwt.Token); token != nil {
+		if claims, ok := token.Claims.(jwt.MapClaims); ok {
+			if idStr, ok := claims["id"].(string); ok {
+				if u, err := repositories.FindUserByID(idStr); err == nil {
+					userInfo = u
+				}
+			}
+		}
+	}
 	for _, inv := range invoices {
+		inv.CreatedBy = userInfo
 		if _, err := ctrl.repo.Create(c.Context(), inv); err != nil {
 			return c.Status(500).JSON(models.APIResponse{Status: "error", Message: "Import failed", Data: nil})
 		}
@@ -214,9 +267,17 @@ func (ctrl *InvoiceController) Import(c *fiber.Ctx) error {
 // Export trả về danh sách hóa đơn dạng JSON có thể nhập lại
 // Method: GET /api/invoices/export
 func (ctrl *InvoiceController) Export(c *fiber.Ctx) error {
-	invoices, _, err := ctrl.repo.ListPaginated(c.Context(), 1, 0)
+	invoices, _, err := ctrl.repo.ListByCodeAndDatePaginated(c.Context(), "", time.Time{}, time.Time{}, 1, 0, nil)
 	if err != nil {
 		return c.Status(500).JSON(models.APIResponse{Status: "error", Message: "Export failed", Data: nil})
+	}
+	for i := range invoices {
+		if invoices[i].CreatedBy != nil {
+			invoices[i].CreatedBy.Password = ""
+		}
+		if invoices[i].DeletedBy != nil {
+			invoices[i].DeletedBy.Password = ""
+		}
 	}
 	c.Attachment("invoices.json")
 	return c.JSON(invoices)

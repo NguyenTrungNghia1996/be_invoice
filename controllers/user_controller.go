@@ -6,7 +6,8 @@ import (
 	"go-fiber-api/utils"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/golang-jwt/jwt"
+	jwt "github.com/golang-jwt/jwt/v4"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"os"
 	"strings"
 )
@@ -238,8 +239,14 @@ func UpdateUser(c *fiber.Ctx) error {
 //
 // @route DELETE /api/users?id=abc,def
 func DeleteUsers(c *fiber.Ctx) error {
-	ids := strings.Split(c.Query("id"), ",")
-	if len(ids) == 0 || ids[0] == "" {
+	idStrs := strings.Split(c.Query("id"), ",")
+	var ids []primitive.ObjectID
+	for _, s := range idStrs {
+		if oid, err := primitive.ObjectIDFromHex(s); err == nil {
+			ids = append(ids, oid)
+		}
+	}
+	if len(ids) == 0 {
 		return c.Status(fiber.StatusBadRequest).JSON(models.APIResponse{Status: "error", Message: "Missing id", Data: nil})
 	}
 	if err := repositories.DeleteUsers(ids); err != nil {
