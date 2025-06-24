@@ -15,6 +15,8 @@ MINIO_SECRET_KEY=noWZ40KlvEcioZcPhLmMZFcPSkdeuX0K # Secret key MinIO
 MINIO_ENDPOINT=image.nghia.myds.me # Host MinIO
 MINIO_BUCKET=test # Tên bucket lưu trữ
 MINIO_SSL=true # Sử dụng HTTPS (true/false)
+ATLAS_MONGO_URL= # Chuỗi kết nối MongoDB Atlas (tuỳ chọn)
+ATLAS_DB_NAME=test2 # Tên database trên Atlas
 ```
 
 ## Cài đặt
