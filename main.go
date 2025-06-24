@@ -1,6 +1,8 @@
 package main
 
 import (
+	"context"
+	"go-fiber-api/backup"
 	"go-fiber-api/config"
 	"go-fiber-api/routes"
 	"go-fiber-api/seed"
@@ -28,6 +30,11 @@ func main() {
 	// Seed user admin nếu cần
 	seed.SeedAdminUser()
 	seed.SeedStoreSettings()
+
+	// Khởi động tiến trình sao lưu tự động nếu đã cấu hình
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	backup.StartAutoBackup(ctx, config.DB)
 
 	app := fiber.New()
 	app.Use(recover.New()) // Bắt panic để tránh server bị crash

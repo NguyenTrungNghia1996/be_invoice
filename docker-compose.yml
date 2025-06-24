@@ -17,6 +17,8 @@ services:
       MINIO_ENDPOINT: image.nghia.myds.me
       MINIO_BUCKET: test
       MINIO_SSL: true
+      ATLAS_MONGO_URL: ""
+      ATLAS_DB_NAME: ""
     restart: unless-stopped
     networks:
       - app-network
